@@ -106,7 +106,8 @@ function LoginPageContent() {
       return
     }
 
-    window.location.href = '/boards'
+    const dest = schoolParam ? `/boards?uni=${schoolParam}` : '/boards'
+    window.location.href = dest
   }
 
   async function handleDevLogin() {

@@ -3,10 +3,25 @@ import { AdvisorSearch } from '@/components/advisors/AdvisorSearch'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 
-export default async function AdvisorsPage() {
+export default async function AdvisorsPage({
+  searchParams,
+}: {
+  searchParams?: { uni?: string }
+}) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
   const isGlobalAdmin = viewer?.role === 'admin'
+
+  let scopedUniversityId: string | null = null
+  if (isGlobalAdmin && searchParams?.uni) {
+    const { data: uniRow } = await supabase
+      .from('universities')
+      .select('id')
+      .eq('domain', searchParams.uni)
+      .single()
+    scopedUniversityId = (uniRow as { id: string } | null)?.id ?? null
+  }
+  const effectiveUniversityId = scopedUniversityId ?? viewer?.university_id ?? null
 
   let advisorQuery = supabase
     .from('advisors')
@@ -14,8 +29,8 @@ export default async function AdvisorsPage() {
     .eq('active', true)
     .order('name')
     .limit(200)
-  if (!isGlobalAdmin && viewer?.university_id) {
-    advisorQuery = advisorQuery.eq('university_id', viewer.university_id)
+  if (!isGlobalAdmin || scopedUniversityId) {
+    if (effectiveUniversityId) advisorQuery = advisorQuery.eq('university_id', effectiveUniversityId)
   }
 
   const [{ data: advisorsData }, { data: aggData }] = await Promise.all([

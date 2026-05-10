@@ -10,18 +10,33 @@ type CourseListItem = Course & {
   discussionCount: number
 }
 
-export default async function CoursesPage() {
+export default async function CoursesPage({
+  searchParams,
+}: {
+  searchParams?: { uni?: string }
+}) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
   const isGlobalAdmin = viewer?.role === 'admin'
+
+  let scopedUniversityId: string | null = null
+  if (isGlobalAdmin && searchParams?.uni) {
+    const { data: uniRow } = await supabase
+      .from('universities')
+      .select('id')
+      .eq('domain', searchParams.uni)
+      .single()
+    scopedUniversityId = (uniRow as { id: string } | null)?.id ?? null
+  }
+  const effectiveUniversityId = scopedUniversityId ?? viewer?.university_id ?? null
 
   let courseQuery = supabase
     .from('courses')
     .select('*, departments(name)')
     .order('code')
     .limit(200)
-  if (!isGlobalAdmin && viewer?.university_id) {
-    courseQuery = (courseQuery as any).eq('university_id', viewer.university_id)
+  if (!isGlobalAdmin || scopedUniversityId) {
+    if (effectiveUniversityId) courseQuery = (courseQuery as any).eq('university_id', effectiveUniversityId)
   }
 
   const { data: coursesData } = await courseQuery

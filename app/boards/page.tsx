@@ -12,19 +12,32 @@ type FeedPost = Post & { commentCount: number; authorLabel: string; deptName: st
 export default async function BoardsPage({
   searchParams,
 }: {
-  searchParams?: { dept?: string }
+  searchParams?: { dept?: string; uni?: string }
 }) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
   const isGlobalAdmin = viewer?.role === 'admin'
+
+  // Global admins can scope to a specific university via ?uni=domain
+  let scopedUniversityId: string | null = null
+  if (isGlobalAdmin && searchParams?.uni) {
+    const { data: uniRow } = await supabase
+      .from('universities')
+      .select('id')
+      .eq('domain', searchParams.uni)
+      .single()
+    scopedUniversityId = (uniRow as { id: string } | null)?.id ?? null
+  }
+
+  const effectiveUniversityId = scopedUniversityId ?? viewer?.university_id ?? null
 
   let deptQuery = supabase
     .from('departments')
     .select('*')
     .eq('active', true)
     .order('name')
-  if (!isGlobalAdmin && viewer?.university_id) {
-    deptQuery = deptQuery.eq('university_id', viewer.university_id)
+  if (!isGlobalAdmin || scopedUniversityId) {
+    if (effectiveUniversityId) deptQuery = deptQuery.eq('university_id', effectiveUniversityId)
   }
   const { data: deptData } = await deptQuery
   const raw = (deptData ?? []) as Department[]
@@ -49,8 +62,8 @@ export default async function BoardsPage({
     .order('created_at', { ascending: false })
     .limit(50)
 
-  if (!isGlobalAdmin && viewer?.university_id) {
-    query = query.eq('university_id', viewer.university_id)
+  if (!isGlobalAdmin || scopedUniversityId) {
+    if (effectiveUniversityId) query = query.eq('university_id', effectiveUniversityId)
   }
   if (activeDept) query = query.eq('dept_id', activeDept.id)
 
