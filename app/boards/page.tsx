@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MessageSquare, Plus, ThumbsUp } from 'lucide-react'
+import { MessageSquare, ThumbsUp } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
@@ -71,22 +71,9 @@ export default async function BoardsPage({
       <main className="max-w-2xl mx-auto px-4 py-6 page-enter space-y-4">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Community</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Anonymous threads across all departments</p>
-          </div>
-          {viewer ? (
-            <Link
-              href="/boards/new"
-              className="btn-primary text-sm gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              Post
-            </Link>
-          ) : (
-            <Link href="/auth/login" className="btn-secondary text-sm">Sign in to post</Link>
-          )}
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Community</h1>
+          <p className="text-xs text-gray-400 mt-0.5">Anonymous threads across all departments</p>
         </div>
 
         {/* Department filter chips */}
