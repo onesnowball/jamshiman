@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find /Users/jamshin/Desktop/gradpeer/app/courses/[id]/ -type f)"
+      "Bash(find /Users/jamshin/Desktop/gradpeer/app/courses/[id]/ -type f)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(npx tsc *)",
+      "Bash(node -e ' *)"
     ]
   }
 }

@@ -191,13 +191,15 @@ export interface Database {
       }
       post_votes: {
         Row: { post_id: string; user_id: string; created_at: string }
-        Insert: { post_id: string; user_id: string }
-        Update: never
+        Insert: { post_id: string; user_id: string; created_at?: string }
+        Update: { post_id?: string; user_id?: string; created_at?: string }
+        Relationships: []
       }
       comment_votes: {
         Row: { comment_id: string; user_id: string; created_at: string }
-        Insert: { comment_id: string; user_id: string }
-        Update: never
+        Insert: { comment_id: string; user_id: string; created_at?: string }
+        Update: { comment_id?: string; user_id?: string; created_at?: string }
+        Relationships: []
       }
     }
     Views: {
