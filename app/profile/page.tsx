@@ -16,6 +16,7 @@ type ProfileCourseReview = CourseReview & {
 
 type ProfilePost = Post & {
   departments: { slug: string | null; name: string | null } | null
+  universities: { domain: string | null } | null
 }
 
 type ProfileComment = Comment & {
@@ -75,13 +76,15 @@ export default async function ProfilePage() {
       .order('created_at', { ascending: false }),
     supabase
       .from('posts')
-      .select('*, departments(slug, name)')
+      .select('*, departments(slug, name), universities(domain)')
       .eq('author_id', viewer.id)
+      .eq('status', 'active')
       .order('created_at', { ascending: false }),
     supabase
       .from('comments')
       .select('*, posts(id, title)')
       .eq('author_id', viewer.id)
+      .eq('status', 'active')
       .order('created_at', { ascending: false }),
     supabase
       .from('schedules')
@@ -197,10 +200,15 @@ export default async function ProfilePage() {
               />
             ) : (
               <div className="space-y-3">
-                {posts.map(post => (
+                {posts.map(post => {
+                  const school = post.universities?.domain?.split('.')[0]
+                  const href = school && post.departments?.slug
+                    ? `/${school}/boards/${post.departments.slug}/${post.id}`
+                    : '#'
+                  return (
                   <Link
                     key={post.id}
-                    href={post.departments?.slug ? `/boards/${post.departments.slug}/${post.id}` : '#'}
+                    href={href}
                     className="card p-4 block"
                   >
                     <p className="text-sm font-medium text-gray-900">{post.title}</p>
@@ -209,7 +217,8 @@ export default async function ProfilePage() {
                     </p>
                     <p className="text-sm text-gray-600 mt-3 line-clamp-3">{post.body}</p>
                   </Link>
-                ))}
+                  )
+                })}
 
                 {comments.map(comment => (
                   <div key={comment.id} className="card p-4">
