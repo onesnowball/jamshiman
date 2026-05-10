@@ -29,8 +29,10 @@ function LoginPageContent() {
     const errorCode = searchParams.get('error')
     if (!errorCode) return
     const errorMessages: Record<string, string> = {
+      auth_failed: 'Session could not be verified. Please request a new code.',
       invalid_domain: 'This email domain is not allowed.',
       profile_failed: 'Account verified but profile setup failed. Please try again.',
+      missing_token: 'Sign-in link was incomplete. Please request a new code.',
     }
     setStatus('error')
     setError(errorMessages[errorCode] ?? 'Sign-in failed. Please try again.')
@@ -71,7 +73,7 @@ function LoginPageContent() {
       setStatus('verify')
       return
     }
-    router.push('/auth/setup')
+    window.location.href = '/auth/setup'
   }
 
   async function handleDevLogin() {
