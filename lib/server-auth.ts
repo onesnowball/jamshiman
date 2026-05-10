@@ -10,6 +10,7 @@ import {
 export interface AppViewer extends User {
   email: string | null
   isDevBypass: boolean
+  campusAdminUniversityIds: string[]  // universities this user is campus admin for
 }
 
 function readSessionFromCookie(): { access_token: string; user: { id: string; email: string } } | null {
@@ -42,8 +43,9 @@ function readSessionFromCookie(): { access_token: string; user: { id: string; em
 }
 
 export async function getOptionalViewer(): Promise<AppViewer | null> {
+  const adminSupabase = createAdminClient()
+
   if (hasDevBypassCookie()) {
-    const adminSupabase = createAdminClient()
     const { data: profileData } = await adminSupabase
       .from('users')
       .select('*')
@@ -51,13 +53,12 @@ export async function getOptionalViewer(): Promise<AppViewer | null> {
       .single()
     const profile = profileData as User | null
     if (!profile) return null
-    return { ...profile, email: getDevBypassEmail(), isDevBypass: true }
+    const campusAdminUniversityIds = await getCampusAdminUniversityIds(profile.id, adminSupabase)
+    return { ...profile, email: getDevBypassEmail(), isDevBypass: true, campusAdminUniversityIds }
   }
 
   const session = readSessionFromCookie()
   if (!session) return null
-
-  const adminSupabase = createAdminClient()
 
   // Verify token is still valid
   const { data: { user }, error } = await adminSupabase.auth.getUser(session.access_token)
@@ -71,11 +72,22 @@ export async function getOptionalViewer(): Promise<AppViewer | null> {
   const profile = profileData as User | null
   if (!profile) return null
 
+  const campusAdminUniversityIds = await getCampusAdminUniversityIds(user.id, adminSupabase)
+
   return {
     ...profile,
     email: user.email?.toLowerCase() ?? null,
     isDevBypass: false,
+    campusAdminUniversityIds,
   }
+}
+
+async function getCampusAdminUniversityIds(userId: string, supabase: ReturnType<typeof createAdminClient>): Promise<string[]> {
+  const { data } = await (supabase as any)
+    .from('campus_admins')
+    .select('university_id')
+    .eq('user_id', userId)
+  return ((data ?? []) as Array<{ university_id: string }>).map(r => r.university_id)
 }
 
 export async function getActionClient() {
@@ -92,6 +104,14 @@ export async function getActionClient() {
 
 export async function getAdminViewer() {
   const viewer = await getOptionalViewer()
-  if (!viewer || viewer.role !== 'admin') return null
+  if (!viewer) return null
+  // Global admin OR campus admin for at least one university
+  if (viewer.role !== 'admin' && viewer.campusAdminUniversityIds.length === 0) return null
   return viewer
+}
+
+/** True if this viewer can admin a specific university */
+export function canAdminUniversity(viewer: AppViewer, universityId: string): boolean {
+  if (viewer.role === 'admin') return true
+  return viewer.campusAdminUniversityIds.includes(universityId)
 }

@@ -1,17 +1,25 @@
 import { Navbar } from '@/components/Navbar'
 import { AdvisorSearch } from '@/components/advisors/AdvisorSearch'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getOptionalViewer } from '@/lib/server-auth'
 
 export default async function AdvisorsPage() {
   const supabase = createAdminClient()
+  const viewer = await getOptionalViewer()
+  const isGlobalAdmin = viewer?.role === 'admin'
+
+  let advisorQuery = supabase
+    .from('advisors')
+    .select('*, departments(name)')
+    .eq('active', true)
+    .order('name')
+    .limit(200)
+  if (!isGlobalAdmin && viewer?.university_id) {
+    advisorQuery = advisorQuery.eq('university_id', viewer.university_id)
+  }
 
   const [{ data: advisorsData }, { data: aggData }] = await Promise.all([
-    supabase
-      .from('advisors')
-      .select('*, departments(name)')
-      .eq('active', true)
-      .order('name')
-      .limit(200),
+    advisorQuery,
     (supabase as any)
       .from('advisor_aggregates')
       .select('advisor_id, review_count, avg_overall'),

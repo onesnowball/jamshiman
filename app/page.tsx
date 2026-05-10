@@ -5,18 +5,18 @@ import Link from 'next/link'
 import { GraduationCap, Search, ArrowRight } from 'lucide-react'
 
 const SCHOOLS = [
-  { name: 'University of Michigan',  short: 'UMich',    emoji: '〽️',  href: '/auth/login', live: true  },
-  { name: 'MIT',                     short: 'MIT',       emoji: '🦫',  href: null,      live: false },
-  { name: 'Stanford University',     short: 'Stanford',  emoji: '🌲',  href: null,      live: false },
-  { name: 'Carnegie Mellon',         short: 'CMU',       emoji: '🎓',  href: null,      live: false },
-  { name: 'UC Berkeley',             short: 'Berkeley',  emoji: '🐻',  href: null,      live: false },
-  { name: 'Georgia Tech',            short: 'GT',        emoji: '🐝',  href: null,      live: false },
-  { name: 'Purdue University',       short: 'Purdue',    emoji: '🚂',  href: null,      live: false },
-  { name: 'Caltech',                 short: 'Caltech',   emoji: '🔭',  href: null,      live: false },
-  { name: 'University of Illinois',  short: 'UIUC',      emoji: '🌽',  href: null,      live: false },
-  { name: 'Cornell University',      short: 'Cornell',   emoji: '🐻',  href: null,      live: false },
-  { name: 'Princeton University',    short: 'Princeton', emoji: '🐯',  href: null,      live: false },
-  { name: 'UT Austin',               short: 'UT Austin', emoji: '🤘',  href: null,      live: false },
+  { name: 'University of Michigan',  short: 'UMich',       emoji: '〽️',  href: '/auth/login', live: true  },
+  { name: 'Northwestern University', short: 'Northwestern', emoji: '🐾',  href: '/auth/login', live: true  },
+  { name: 'MIT',                     short: 'MIT',          emoji: '🦫',  href: null,          live: false },
+  { name: 'Stanford University',     short: 'Stanford',     emoji: '🌲',  href: null,          live: false },
+  { name: 'Carnegie Mellon',         short: 'CMU',          emoji: '🎓',  href: null,          live: false },
+  { name: 'UC Berkeley',             short: 'Berkeley',     emoji: '🐻',  href: null,          live: false },
+  { name: 'Georgia Tech',            short: 'GT',           emoji: '🐝',  href: null,          live: false },
+  { name: 'Purdue University',       short: 'Purdue',       emoji: '🚂',  href: null,          live: false },
+  { name: 'Caltech',                 short: 'Caltech',      emoji: '🔭',  href: null,          live: false },
+  { name: 'University of Illinois',  short: 'UIUC',         emoji: '🌽',  href: null,          live: false },
+  { name: 'Cornell University',      short: 'Cornell',      emoji: '🐻',  href: null,          live: false },
+  { name: 'UT Austin',               short: 'UT Austin',    emoji: '🤘',  href: null,          live: false },
 ]
 
 export default function Home() {

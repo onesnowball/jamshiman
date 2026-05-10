@@ -7,7 +7,14 @@
       "Bash(git push *)",
       "Bash(npx tsc *)",
       "Bash(node -e ' *)",
-      "Bash(mkdir -p /Users/jamshin/Desktop/gradpeer/app/api/posts/\\\\[id\\\\] /Users/jamshin/Desktop/gradpeer/app/api/messages/\\\\[userId\\\\] /Users/jamshin/Desktop/gradpeer/app/messages/\\\\[userId\\\\])"
+      "Bash(mkdir -p /Users/jamshin/Desktop/gradpeer/app/api/posts/\\\\[id\\\\] /Users/jamshin/Desktop/gradpeer/app/api/messages/\\\\[userId\\\\] /Users/jamshin/Desktop/gradpeer/app/messages/\\\\[userId\\\\])",
+      "WebFetch(domain:me.engin.umich.edu)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(curl -s -L -H 'User-Agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' https://me.engin.umich.edu/people/faculty/)",
+      "WebSearch",
+      "Bash(curl -s -L -H 'User-Agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml' -H 'Accept-Language: en-US,en;q=0.9' -H 'Cache-Control: no-cache' https://me.engin.umich.edu/people/printable-directory/)",
+      "Bash(grep -A5 \"mihaela-banu\\\\|Mihaela Banu\" /tmp/faculty_filtered.json | head -20)",
+      "WebFetch(domain:web.archive.org)"
     ]
   }
 }

@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/Navbar'
 import { CourseSearch } from '@/components/courses/CourseSearch'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
+import { getOptionalViewer } from '@/lib/server-auth'
 import type { Course } from '@/types/database'
 
 type CourseListItem = Course & {
@@ -10,13 +11,20 @@ type CourseListItem = Course & {
 }
 
 export default async function CoursesPage() {
-  const supabase = createClient()
+  const supabase = createAdminClient()
+  const viewer = await getOptionalViewer()
+  const isGlobalAdmin = viewer?.role === 'admin'
 
-  const { data: coursesData } = await supabase
+  let courseQuery = supabase
     .from('courses')
     .select('*, departments(name)')
     .order('code')
     .limit(200)
+  if (!isGlobalAdmin && viewer?.university_id) {
+    courseQuery = (courseQuery as any).eq('university_id', viewer.university_id)
+  }
+
+  const { data: coursesData } = await courseQuery
   const courses = (coursesData ?? []) as (Course & { departments: { name: string | null } | null })[]
 
   const courseItems: CourseListItem[] = await Promise.all(courses.map(async course => {

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { MessageSquare, ThumbsUp, Plus } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
@@ -14,15 +14,19 @@ export default async function BoardsPage({
 }: {
   searchParams?: { dept?: string }
 }) {
-  const supabase = createClient()
-  const admin = createAdminClient()
+  const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
+  const isGlobalAdmin = viewer?.role === 'admin'
 
-  const { data: deptData } = await admin
+  let deptQuery = supabase
     .from('departments')
     .select('*')
     .eq('active', true)
     .order('name')
+  if (!isGlobalAdmin && viewer?.university_id) {
+    deptQuery = deptQuery.eq('university_id', viewer.university_id)
+  }
+  const { data: deptData } = await deptQuery
   const raw = (deptData ?? []) as Department[]
   const GENERAL_SLUGS = ['general', 'career', 'housing', 'research', 'wellbeing', 'marketplace']
   const departments = [
@@ -43,6 +47,9 @@ export default async function BoardsPage({
     .order('created_at', { ascending: false })
     .limit(50)
 
+  if (!isGlobalAdmin && viewer?.university_id) {
+    query = query.eq('university_id', viewer.university_id)
+  }
   if (activeDept) query = query.eq('dept_id', activeDept.id)
 
   const { data: postsData } = await query
