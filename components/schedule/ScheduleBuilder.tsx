@@ -13,6 +13,17 @@ type ScheduleWithBlocks = Schedule & {
   schedule_courses: ScheduleBlock[]
 }
 
+const BLOCK_COLORS = [
+  { bg: 'bg-blue-100',   border: 'border-blue-200',   text: 'text-blue-800',   sub: 'text-blue-700'   },
+  { bg: 'bg-emerald-100',border: 'border-emerald-200', text: 'text-emerald-800',sub: 'text-emerald-700' },
+  { bg: 'bg-violet-100', border: 'border-violet-200',  text: 'text-violet-800', sub: 'text-violet-700'  },
+  { bg: 'bg-amber-100',  border: 'border-amber-200',   text: 'text-amber-800',  sub: 'text-amber-700'   },
+  { bg: 'bg-rose-100',   border: 'border-rose-200',    text: 'text-rose-800',   sub: 'text-rose-700'    },
+  { bg: 'bg-cyan-100',   border: 'border-cyan-200',    text: 'text-cyan-800',   sub: 'text-cyan-700'    },
+  { bg: 'bg-orange-100', border: 'border-orange-200',  text: 'text-orange-800', sub: 'text-orange-700'  },
+  { bg: 'bg-teal-100',   border: 'border-teal-200',    text: 'text-teal-800',   sub: 'text-teal-700'    },
+]
+
 const DAY_OPTIONS = [
   { value: 1, label: 'Mon' },
   { value: 2, label: 'Tue' },
@@ -65,6 +76,14 @@ export function ScheduleBuilder({
       return minutesFromTime(a.start_time) - minutesFromTime(b.start_time)
     })
   }, [selectedSchedule])
+
+  const courseColorMap = useMemo(() => {
+    const seen = new Map<string, number>()
+    for (const block of sortedBlocks) {
+      if (!seen.has(block.course_id)) seen.set(block.course_id, seen.size)
+    }
+    return seen
+  }, [sortedBlocks])
 
   async function createSchedule() {
     setSaving('schedule')
@@ -392,18 +411,20 @@ export function ScheduleBuilder({
                     const endMinutes = minutesFromTime(block.end_time)
                     const top = ((startMinutes - 8 * 60) / 60) * 64
                     const height = ((endMinutes - startMinutes) / 60) * 64
+                    const colorIdx = (courseColorMap.get(block.course_id) ?? 0) % BLOCK_COLORS.length
+                    const c = BLOCK_COLORS[colorIdx]
 
                     return (
                       <button
                         key={block.id}
                         type="button"
                         onClick={() => loadBlock(block)}
-                        className="absolute left-2 right-2 rounded-xl bg-brand-100 border border-brand-200 px-3 py-2 text-left shadow-sm"
+                        className={`absolute left-2 right-2 rounded-xl border px-3 py-2 text-left shadow-sm ${c.bg} ${c.border}`}
                         style={{ top: `${top}px`, height: `${height}px` }}
                       >
-                        <p className="text-xs font-semibold text-brand-800">{block.courses?.code ?? 'Course'}</p>
-                        <p className="text-[11px] text-brand-700 mt-1 leading-tight">{block.courses?.name}</p>
-                        <p className="text-[10px] text-brand-700 mt-1">
+                        <p className={`text-xs font-semibold ${c.text}`}>{block.courses?.code ?? 'Course'}</p>
+                        <p className={`text-[11px] ${c.sub} mt-1 leading-tight`}>{block.courses?.name}</p>
+                        <p className={`text-[10px] ${c.sub} mt-1`}>
                           {block.start_time}–{block.end_time}
                         </p>
                       </button>

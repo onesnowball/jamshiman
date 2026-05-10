@@ -5,12 +5,14 @@ import { Navbar } from '@/components/Navbar'
 import { createClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
+import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { FlagButton } from '@/components/FlagButton'
 import { CommentForm } from '@/components/forms/CommentForm'
+import { UpvoteButton } from '@/components/boards/UpvoteButton'
 import type { Comment, Department, Post } from '@/types/database'
 
-type PostWithHandle = Post & { authorLabel: string }
-type CommentWithHandle = Comment & { authorLabel: string }
+type PostWithHandle = Post & { authorLabel: string; upvoteCount: number }
+type CommentWithHandle = Comment & { authorLabel: string; upvoteCount: number }
 
 export default async function BoardPostPage({
   params,
@@ -49,13 +51,26 @@ export default async function BoardPostPage({
   const comments = (commentsData ?? []) as Comment[]
 
   const emailMap = await getAuthEmailMap([post.author_id, ...comments.map(comment => comment.author_id)])
+
+  const { count: postUpvotes } = await supabase
+    .from('post_votes')
+    .select('*', { count: 'exact', head: true })
+    .eq('post_id', post.id)
+
   const postWithHandle: PostWithHandle = {
     ...post,
-    authorLabel: post.is_anonymous ? 'Anonymous' : toPublicHandle(emailMap.get(post.author_id)),
+    authorLabel: post.is_anonymous ? getAnonymousHandle(post.author_id, post.id) : toPublicHandle(emailMap.get(post.author_id)),
+    upvoteCount: postUpvotes ?? 0,
   }
-  const commentsWithHandles: CommentWithHandle[] = comments.map(comment => ({
+
+  const commentVoteCounts = await Promise.all(comments.map(c =>
+    supabase.from('comment_votes').select('*', { count: 'exact', head: true }).eq('comment_id', c.id)
+  ))
+
+  const commentsWithHandles: CommentWithHandle[] = comments.map((comment, i) => ({
     ...comment,
-    authorLabel: comment.is_anonymous ? 'Anonymous' : toPublicHandle(emailMap.get(comment.author_id)),
+    authorLabel: comment.is_anonymous ? getAnonymousHandle(comment.author_id, post.id) : toPublicHandle(emailMap.get(comment.author_id)),
+    upvoteCount: commentVoteCounts[i].count ?? 0,
   }))
 
   return (
@@ -82,6 +97,16 @@ export default async function BoardPostPage({
           <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
             {postWithHandle.body}
           </p>
+
+          <div className="pt-1">
+            <UpvoteButton
+              type="post"
+              id={postWithHandle.id}
+              initialCount={postWithHandle.upvoteCount}
+              initialVoted={false}
+              isLoggedIn={!!viewer}
+            />
+          </div>
         </article>
 
         {viewer ? (
@@ -125,6 +150,14 @@ export default async function BoardPostPage({
                 <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                   {comment.body}
                 </p>
+
+                <UpvoteButton
+                  type="comment"
+                  id={comment.id}
+                  initialCount={comment.upvoteCount}
+                  initialVoted={false}
+                  isLoggedIn={!!viewer}
+                />
               </div>
             ))
           )}
