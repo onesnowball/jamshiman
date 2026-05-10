@@ -115,8 +115,8 @@ function LoginPageContent() {
               <input
                 type="text"
                 inputMode="numeric"
-                maxLength={6}
-                placeholder="000000"
+                maxLength={8}
+                placeholder="00000000"
                 value={code}
                 onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
                 className="input text-center text-2xl tracking-widest font-mono"
@@ -132,7 +132,7 @@ function LoginPageContent() {
 
               <button
                 type="submit"
-                disabled={status === 'verifying' || code.length < 6}
+                disabled={status === 'verifying' || code.length < 6 || code.length > 8}
                 className="btn-primary w-full justify-center py-2.5 disabled:opacity-50"
               >
                 {status === 'verifying'
