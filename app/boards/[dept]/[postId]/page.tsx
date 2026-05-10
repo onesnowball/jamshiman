@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Lock, MessageSquareText } from 'lucide-react'
+import { Lock, MessageSquareText, Mail } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
@@ -9,6 +9,7 @@ import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { FlagButton } from '@/components/FlagButton'
 import { CommentForm } from '@/components/forms/CommentForm'
 import { UpvoteButton } from '@/components/boards/UpvoteButton'
+import { DeletePostButton } from '@/components/boards/DeletePostButton'
 import type { Comment, Department, Post } from '@/types/database'
 
 type PostWithHandle = Post & { authorLabel: string; upvoteCount: number }
@@ -87,11 +88,23 @@ export default async function BoardPostPage({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">{postWithHandle.title}</h1>
-              <p className="text-sm text-gray-400 mt-2">
-                {postWithHandle.authorLabel} · {new Date(postWithHandle.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                <p className="text-sm text-gray-400">
+                  {postWithHandle.authorLabel} · {new Date(postWithHandle.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+                {!post.is_anonymous && viewer && post.author_id !== viewer.id && (
+                  <Link href={`/messages/${post.author_id}`} className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-800 transition-colors">
+                    <Mail className="w-3 h-3" />Message
+                  </Link>
+                )}
+              </div>
             </div>
-            <FlagButton contentType="post" contentId={postWithHandle.id} />
+            <div className="flex items-center gap-2">
+              {viewer?.id === post.author_id && (
+                <DeletePostButton postId={post.id} redirectTo={`/boards/${department.slug}`} />
+              )}
+              <FlagButton contentType="post" contentId={postWithHandle.id} />
+            </div>
           </div>
 
           <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">

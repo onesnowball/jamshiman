@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { MessageSquare, Plus } from 'lucide-react'
+import { MessageSquare, Plus, ThumbsUp } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
-import { UpvoteButton } from '@/components/boards/UpvoteButton'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
@@ -127,42 +126,33 @@ export default async function BoardsPage({
             )}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
             {feed.map(post => {
               const dept = deptMap.get(post.dept_id)
               return (
                 <Link
                   key={post.id}
                   href={`/boards/${dept?.slug ?? 'unknown'}/${post.id}`}
-                  className="card p-4 block hover:border-brand-200 hover:shadow-md transition-all"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[11px] text-brand-700 font-medium bg-brand-50 px-2 py-0.5 rounded-full">
-                          {post.deptName.replace(' Engineering', '').replace(' Sciences', '')}
-                        </span>
-                        <span className="text-[11px] text-gray-400">{post.authorLabel}</span>
-                        <span className="text-[11px] text-gray-300">·</span>
-                        <span className="text-[11px] text-gray-400">
-                          {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </span>
-                      </div>
-                      <h2 className="font-medium text-gray-900 leading-snug">{post.title}</h2>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2 leading-relaxed">{post.body}</p>
-                    </div>
-                    <div className="flex-shrink-0 flex flex-col items-end gap-2 pt-0.5">
-                      <UpvoteButton
-                        type="post"
-                        id={post.id}
-                        initialCount={post.upvoteCount}
-                        initialVoted={false}
-                        isLoggedIn={!!viewer}
-                      />
-                      <span className="text-xs text-gray-400">
-                        {post.commentCount} {post.commentCount === 1 ? 'reply' : 'replies'}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-[10px] text-brand-700 font-medium bg-brand-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                        {post.deptName.replace(' Engineering', '').replace(' Sciences', '')}
+                      </span>
+                      <span className="text-[10px] text-gray-400 truncate">
+                        {post.authorLabel} · {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
+                    <h2 className="text-sm font-medium text-gray-900 leading-snug">{post.title}</h2>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0 text-xs text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <ThumbsUp className="w-3 h-3" />{post.upvoteCount}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3" />{post.commentCount}
+                    </span>
                   </div>
                 </Link>
               )

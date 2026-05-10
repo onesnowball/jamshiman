@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus, UserCircle, Shield } from 'lucide-react'
+import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus, UserCircle, Shield, Mail } from 'lucide-react'
 import { clsx } from 'clsx'
 
 const navItems = [
   { href: '/boards',   label: 'Boards',   icon: MessageSquare },
+  { href: '/messages', label: 'Messages', icon: Mail },
   { href: '/advisors', label: 'Advisors', icon: Search },
   { href: '/courses',  label: 'Courses',  icon: BookOpen },
   { href: '/schedule', label: 'Schedule', icon: Calendar },
