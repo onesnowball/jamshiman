@@ -2,8 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useSearchParams } from 'next/navigation'
-import { GraduationCap, Mail, CheckCircle, AlertCircle, Loader2, Shield } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { GraduationCap, Mail, AlertCircle, Loader2, Shield, KeyRound } from 'lucide-react'
 import {
   getPublicAllowedSchoolDomains,
   getPublicPrimarySchoolDomain,
@@ -14,10 +14,12 @@ import {
 
 function LoginPageContent() {
   const [email, setEmail] = useState('')
-  const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
+  const [code, setCode] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'verify' | 'verifying' | 'error'>('idle')
   const [error, setError] = useState('')
   const [isDevLoggingIn, setIsDevLoggingIn] = useState(false)
   const supabase = createClient()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const devBypassEnabled = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true'
   const allowedDomains = getPublicAllowedSchoolDomains()
@@ -26,48 +28,55 @@ function LoginPageContent() {
   useEffect(() => {
     const errorCode = searchParams.get('error')
     if (!errorCode) return
-
     const errorMessages: Record<string, string> = {
-      auth_failed: 'The sign-in link could not be verified. Please request a new one and try again.',
-      invalid_domain: 'This email domain is not configured for the app yet.',
-      missing_token: 'The sign-in link was incomplete. Please request a new email link.',
-      profile_failed: 'Your account was verified, but the user profile setup failed. Please try again.',
+      invalid_domain: 'This email domain is not allowed.',
+      profile_failed: 'Account verified but profile setup failed. Please try again.',
     }
-
     setStatus('error')
     setError(errorMessages[errorCode] ?? 'Sign-in failed. Please try again.')
   }, [searchParams])
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSendCode(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    setStatus('idle')
-
     const normalizedEmail = normalizeEmail(email)
     if (!isAllowedSchoolEmail(normalizedEmail, allowedDomains)) {
-      setError(`Only ${allowedDomains.map(domain => `@${domain}`).join(', ')} email addresses are accepted.`)
+      setError(`Only ${allowedDomains.map(d => `@${d}`).join(', ')} addresses accepted.`)
       return
     }
-
     setStatus('loading')
     const { error: authError } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
-      options: { emailRedirectTo: `${location.origin}/auth/callback` },
     })
-
     if (authError) {
       setError(authError.message)
       setStatus('error')
     } else {
-      setStatus('sent')
+      setStatus('verify')
     }
+  }
+
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setStatus('verifying')
+    const normalizedEmail = normalizeEmail(email)
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: code.trim(),
+      type: 'email',
+    })
+    if (verifyError) {
+      setError('Invalid or expired code. Request a new one.')
+      setStatus('verify')
+      return
+    }
+    router.push('/auth/setup')
   }
 
   async function handleDevLogin() {
     setIsDevLoggingIn(true)
     setError('')
-    setStatus('idle')
-
     try {
       const res = await fetch('/api/dev-login', { method: 'POST' })
       const data = await res.json()
@@ -89,26 +98,59 @@ function LoginPageContent() {
             <GraduationCap className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">jamshiman</h1>
-          <p className="text-gray-500 text-sm mt-1">Everytime-style campus community, starting with grad students</p>
+          <p className="text-gray-500 text-sm mt-1">Campus community for grad students</p>
         </div>
 
         <div className="card p-6">
-          {status === 'sent' ? (
-            <div className="text-center space-y-3">
-              <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
-              <h2 className="font-medium text-gray-900">Check your email</h2>
-              <p className="text-sm text-gray-500">
-                We sent a sign-in link to <strong>{email}</strong>. Click it to continue.
-              </p>
+          {status === 'verify' || status === 'verifying' ? (
+            <form onSubmit={handleVerifyCode} className="space-y-4">
+              <div className="text-center mb-2">
+                <KeyRound className="w-8 h-8 text-brand-600 mx-auto mb-2" />
+                <p className="font-medium text-gray-900">Enter your code</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  We sent a 6-digit code to <strong>{email}</strong>
+                </p>
+              </div>
+
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={code}
+                onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
+                className="input text-center text-2xl tracking-widest font-mono"
+                autoFocus
+              />
+
+              {error && (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg p-3">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+
               <button
-                onClick={() => { setStatus('idle'); setEmail('') }}
-                className="text-sm text-brand-600 hover:underline"
+                type="submit"
+                disabled={status === 'verifying' || code.length < 6}
+                className="btn-primary w-full justify-center py-2.5 disabled:opacity-50"
+              >
+                {status === 'verifying'
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
+                  : 'Verify code'
+                }
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setStatus('idle'); setCode(''); setError('') }}
+                className="text-sm text-brand-600 hover:underline w-full text-center"
               >
                 Use a different email
               </button>
-            </div>
+            </form>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSendCode} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="section-label">University email</label>
                 <div className="relative">
@@ -123,7 +165,7 @@ function LoginPageContent() {
                   />
                 </div>
                 <p className="text-xs text-gray-400">
-                  Only {allowedDomains.map(domain => `@${domain}`).join(', ')} addresses accepted.
+                  Only {allowedDomains.map(d => `@${d}`).join(', ')} addresses accepted.
                 </p>
               </div>
 
@@ -140,17 +182,17 @@ function LoginPageContent() {
                 className="btn-primary w-full justify-center py-2.5"
               >
                 {status === 'loading'
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending link...</>
-                  : 'Send sign-in link'
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending code...</>
+                  : 'Send sign-in code'
                 }
               </button>
             </form>
           )}
 
-          {devBypassEnabled && status !== 'sent' && (
+          {devBypassEnabled && status !== 'verify' && status !== 'verifying' && (
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
               <div className="text-xs text-gray-500 bg-amber-50 border border-amber-100 rounded-lg p-3">
-                Dev bypass is enabled locally. This creates or updates a dev admin user and signs you in without email.
+                Dev bypass enabled.
               </div>
               <button
                 type="button"
@@ -159,7 +201,7 @@ function LoginPageContent() {
                 className="btn-secondary w-full justify-center py-2.5"
               >
                 {isDevLoggingIn
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in as dev admin...</>
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
                   : <><Shield className="w-4 h-4" /> Continue as dev admin</>
                 }
               </button>
@@ -168,8 +210,8 @@ function LoginPageContent() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Starting at {primaryDomain === 'umich.edu' ? 'UMich' : primaryDomain} with anonymous, verified reviews for grad students.
-          <br />No passwords. No tracking. Just honest information.
+          {primaryDomain === 'umich.edu' ? 'UMich' : primaryDomain} grad students only.
+          No passwords. No tracking.
         </p>
       </div>
     </div>
