@@ -13,7 +13,7 @@ type CourseListItem = Course & {
 
 const DEPT_FILTERS = ['All', 'ME', 'EECS', 'AERO', 'IOE']
 
-export function CourseSearch({ courses }: { courses: CourseListItem[] }) {
+export function CourseSearch({ courses, school }: { courses: CourseListItem[]; school?: string }) {
   const [query, setQuery] = useState('')
   const [dept, setDept] = useState('All')
 
@@ -66,7 +66,7 @@ export function CourseSearch({ courses }: { courses: CourseListItem[] }) {
           {filtered.map(course => (
             <Link
               key={course.id}
-              href={`/courses/${course.id}`}
+              href={school ? `/${school}/courses/${course.id}` : `/courses/${course.id}`}
               className="card p-4 flex items-center justify-between gap-4 hover:border-brand-200 hover:shadow-md transition-all group"
             >
               <div className="min-w-0">

@@ -106,13 +106,9 @@ function LoginPageContent() {
       return
     }
 
-    // Persist the selected school so all pages scope correctly
-    if (schoolParam) {
-      document.cookie = `active_uni=${schoolParam}; path=/; max-age=86400; SameSite=Lax`
-    } else {
-      document.cookie = 'active_uni=; path=/; max-age=0'
-    }
-    window.location.href = '/boards'
+    // Redirect to school-scoped boards (slug = first part of domain e.g. "northwestern")
+    const slug = schoolParam ? schoolParam.split('.')[0] : 'umich'
+    window.location.href = `/${slug}/boards`
   }
 
   async function handleDevLogin() {

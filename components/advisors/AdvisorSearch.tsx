@@ -18,7 +18,7 @@ type AdvisorItem = {
   } | null
 }
 
-export function AdvisorSearch({ advisors }: { advisors: AdvisorItem[] }) {
+export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; school?: string }) {
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
@@ -63,7 +63,7 @@ export function AdvisorSearch({ advisors }: { advisors: AdvisorItem[] }) {
             return (
               <Link
                 key={advisor.id}
-                href={`/advisors/${advisor.id}`}
+                href={school ? `/${school}/advisors/${advisor.id}` : `/advisors/${advisor.id}`}
                 className="card p-4 flex items-start gap-4 hover:border-brand-200 hover:shadow-md transition-all group"
               >
                 <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-semibold text-sm flex-shrink-0 group-hover:bg-brand-100 transition-colors">

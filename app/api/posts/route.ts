@@ -137,7 +137,10 @@ export async function POST(req: NextRequest) {
       is_anonymous: parsed.data.is_anonymous,
       status: 'active',
     }
-    postUrl = `/courses/${parsed.data.course_id}/discussion`
+    // Look up university slug for the URL
+    const { data: courseUni } = await supabase.from('universities').select('domain').eq('id', (course as { university_id: string }).university_id).single()
+    const courseSchool = courseUni ? (courseUni as { domain: string }).domain.split('.')[0] : 'umich'
+    postUrl = `/${courseSchool}/courses/${parsed.data.course_id}/discussion`
   } else {
     const { data: department } = await supabase
       .from('departments')
@@ -160,7 +163,11 @@ export async function POST(req: NextRequest) {
       is_anonymous: parsed.data.is_anonymous,
       status: 'active',
     }
-    postUrl = `/boards/${(department as { slug: string }).slug}`
+
+    // Look up university slug for the URL
+    const { data: deptUni } = await supabase.from('universities').select('domain').eq('id', (department as { university_id: string }).university_id).single()
+    const deptSchool = deptUni ? (deptUni as { domain: string }).domain.split('.')[0] : 'umich'
+    postUrl = `/${deptSchool}/boards/${(department as { slug: string }).slug}`
   }
 
   const { data, error } = await supabaseAny
@@ -173,11 +180,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error?.message ?? 'Could not create post.' }, { status: 500 })
   }
 
-  if (parsed.data.course_id) {
-    postUrl = `${postUrl}/${data.id}`
-  } else {
-    postUrl = `${postUrl}/${data.id}`
-  }
+  postUrl = `${postUrl}/${data.id}`
 
   return NextResponse.json({
     postId: data.id,

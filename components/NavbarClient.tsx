@@ -5,21 +5,27 @@ import { usePathname } from 'next/navigation'
 import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus, UserCircle, Shield, Mail } from 'lucide-react'
 import { clsx } from 'clsx'
 
-const navItems = [
-  { href: '/boards',   label: 'Boards',   icon: MessageSquare },
-  { href: '/messages', label: 'Messages', icon: Mail },
-  { href: '/advisors', label: 'Advisors', icon: Search },
-  { href: '/courses',  label: 'Courses',  icon: BookOpen },
-  { href: '/schedule', label: 'Schedule', icon: Calendar },
-]
-
-export function NavbarClient({ isAdmin = false }: { isAdmin?: boolean }) {
+export function NavbarClient({ isAdmin = false, school }: { isAdmin?: boolean; school?: string }) {
   const path = usePathname()
+  const s = school ?? ''
+
+  const navItems = s ? [
+    { href: `/${s}/boards`,   label: 'Boards',   icon: MessageSquare },
+    { href: '/messages',      label: 'Messages', icon: Mail },
+    { href: `/${s}/advisors`, label: 'Advisors', icon: Search },
+    { href: `/${s}/courses`,  label: 'Courses',  icon: BookOpen },
+    { href: `/${s}/schedule`, label: 'Schedule', icon: Calendar },
+  ] : [
+    { href: '/messages',  label: 'Messages', icon: Mail },
+    { href: '/profile',   label: 'Profile',  icon: UserCircle },
+  ]
+
+  const homeHref = s ? `/${s}/boards` : '/'
 
   return (
     <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100">
       <div className="max-w-4xl mx-auto px-4 flex items-center justify-between h-13 gap-4" style={{ height: '52px' }}>
-        <Link href="/boards" className="flex items-center gap-1.5 font-semibold text-gray-900 flex-shrink-0">
+        <Link href={homeHref} className="flex items-center gap-1.5 font-semibold text-gray-900 flex-shrink-0">
           <GraduationCap className="w-4.5 h-4.5 text-brand-600" style={{ width: '18px', height: '18px' }} />
           <span className="text-sm">jamshiman</span>
         </Link>
@@ -69,13 +75,15 @@ export function NavbarClient({ isAdmin = false }: { isAdmin?: boolean }) {
           >
             <UserCircle className="w-4 h-4" />
           </Link>
-          <Link
-            href="/boards/new"
-            className="flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Post</span>
-          </Link>
+          {s && (
+            <Link
+              href={`/${s}/boards/new`}
+              className="flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Post</span>
+            </Link>
+          )}
         </div>
       </div>
     </nav>

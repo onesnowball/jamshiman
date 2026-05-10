@@ -1,45 +1,50 @@
 import Link from 'next/link'
-import { Lock, MessageSquare, MessageSquareText } from 'lucide-react'
-import { NewCourseThreadForm } from '@/components/forms/NewCourseThreadForm'
-import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
-import { getOptionalViewer } from '@/lib/server-auth'
+import { notFound } from 'next/navigation'
+import { Lock, MessageSquare } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
-import type { Post } from '@/types/database'
+import { getOptionalViewer } from '@/lib/server-auth'
+import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
+import { getUniversityBySlug } from '@/lib/school'
+import { BoardPostForm } from '@/components/forms/BoardPostForm'
+import type { Department, Post } from '@/types/database'
 
-type CourseDiscussionPost = Post & {
-  authorLabel: string
-  commentCount: number
-}
-
-export async function CourseDiscussionTab({
-  courseId,
-  courseCode,
-  school,
+export default async function DepartmentBoardPage({
+  params,
 }: {
-  courseId: string
-  courseCode: string
-  school?: string
+  params: { school: string; dept: string }
 }) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
+  const university = await getUniversityBySlug(params.school)
+  if (!university) notFound()
+
+  const { data: departmentData } = await supabase
+    .from('departments')
+    .select('*')
+    .eq('slug', params.dept)
+    .eq('university_id', university.id)
+    .eq('active', true)
+    .single()
+  const department = departmentData as Department | null
+  if (!department) notFound()
 
   const { data: postsData } = await supabase
     .from('posts')
     .select('*')
-    .eq('course_id', courseId)
-    .eq('board_type', 'course')
+    .eq('dept_id', department.id)
+    .eq('board_type', 'department')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
   const posts = (postsData ?? []) as Post[]
 
   const emailMap = await getAuthEmailMap(posts.map(post => post.author_id))
-  const postCards: CourseDiscussionPost[] = await Promise.all(posts.map(async post => {
+
+  const postCards = await Promise.all(posts.map(async post => {
     const { count } = await supabase
       .from('comments')
       .select('*', { count: 'exact', head: true })
       .eq('post_id', post.id)
       .eq('status', 'active')
-
     return {
       ...post,
       commentCount: count ?? 0,
@@ -48,28 +53,25 @@ export async function CourseDiscussionTab({
   }))
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="font-medium text-gray-900">Course discussion</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Class-scoped threads for practical questions, study signals, and the things people usually text a friend about.
-          </p>
-        </div>
-        <span className="badge-blue">{postCards.length} thread{postCards.length === 1 ? '' : 's'}</span>
+    <main className="max-w-5xl mx-auto px-4 py-8 page-enter space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">{department.name} board</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Anonymous-first threads for department context, survival advice, and questions people usually ask in private.
+        </p>
       </div>
 
       {viewer ? (
-        <NewCourseThreadForm courseId={courseId} courseCode={courseCode} />
+        <BoardPostForm deptId={department.id} />
       ) : (
         <div className="card p-5 flex items-start gap-3">
           <Lock className="w-5 h-5 text-brand-600 mt-0.5" />
           <div>
-            <p className="font-medium text-gray-900">Sign in to start a class thread</p>
+            <p className="font-medium text-gray-900">Sign in to post or comment</p>
             <p className="text-sm text-gray-500 mt-1">
-              Reading stays open, but posting is limited to verified UMich users so course discussion stays high-signal.
+              Reading is open, but writing is limited to verified {university.name} users.
             </p>
-            <Link href="/auth/login" className="btn-secondary mt-4">Sign in</Link>
+            <Link href={`/auth/login?school=${params.school}.edu`} className="btn-secondary mt-4">Sign in</Link>
           </div>
         </div>
       )}
@@ -77,25 +79,20 @@ export async function CourseDiscussionTab({
       {!postCards.length ? (
         <div className="card p-10 text-center text-gray-400">
           <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-40" />
-          <p className="text-sm font-medium text-gray-700">No discussions yet for {courseCode}.</p>
-          <p className="text-xs mt-1">
-            Be the first to ask a question, share survival advice, or help classmates calibrate the workload.
-          </p>
+          <p className="text-sm">No threads yet. Start the first one for this department.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {postCards.map(post => (
             <Link
               key={post.id}
-              href={school ? `/${school}/courses/${courseId}/discussion/${post.id}` : `/courses/${courseId}/discussion/${post.id}`}
+              href={`/${params.school}/boards/${department.slug}/${post.id}`}
               className="card p-5 block hover:border-brand-200 hover:shadow-md transition-all"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-medium text-gray-900">{post.title}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed mt-2 line-clamp-3">
-                    {post.body}
-                  </p>
+                  <h2 className="font-medium text-gray-900">{post.title}</h2>
+                  <p className="text-sm text-gray-600 leading-relaxed mt-2 line-clamp-3">{post.body}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="badge-gray">{post.commentCount} repl{post.commentCount === 1 ? 'y' : 'ies'}</div>
@@ -109,6 +106,6 @@ export async function CourseDiscussionTab({
           ))}
         </div>
       )}
-    </div>
+    </main>
   )
 }
