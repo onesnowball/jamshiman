@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/jamshin/Desktop/gradpeer/app/courses/[id]/ -type f)"
+    ]
+  }
+}

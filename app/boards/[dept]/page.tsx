@@ -1,0 +1,113 @@
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { Lock, MessageSquare } from 'lucide-react'
+import { Navbar } from '@/components/Navbar'
+import { createClient } from '@/lib/supabase/server'
+import { getOptionalViewer } from '@/lib/server-auth'
+import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
+import { BoardPostForm } from '@/components/forms/BoardPostForm'
+import type { Department, Post } from '@/types/database'
+
+type BoardPost = Post
+
+export default async function DepartmentBoardPage({ params }: { params: { dept: string } }) {
+  const supabase = createClient()
+  const viewer = await getOptionalViewer()
+
+  const { data: departmentData } = await supabase
+    .from('departments')
+    .select('*')
+    .eq('slug', params.dept)
+    .eq('active', true)
+    .single()
+  const department = departmentData as Department | null
+
+  if (!department) notFound()
+
+  const { data: postsData } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('dept_id', department.id)
+    .eq('board_type', 'department')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+  const posts = (postsData ?? []) as BoardPost[]
+
+  const emailMap = await getAuthEmailMap(posts.map(post => post.author_id))
+
+  const postCards = await Promise.all(posts.map(async post => {
+    const { count } = await supabase
+      .from('comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', post.id)
+      .eq('status', 'active')
+
+    return {
+      ...post,
+      commentCount: count ?? 0,
+      authorLabel: post.is_anonymous ? 'Anonymous' : toPublicHandle(emailMap.get(post.author_id)),
+    }
+  }))
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <main className="max-w-5xl mx-auto px-4 py-8 page-enter space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">{department.name} board</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Anonymous-first threads for department context, survival advice, and the questions people usually ask in private.
+          </p>
+        </div>
+
+        {viewer ? (
+          <BoardPostForm deptId={department.id} />
+        ) : (
+          <div className="card p-5 flex items-start gap-3">
+            <Lock className="w-5 h-5 text-brand-600 mt-0.5" />
+            <div>
+              <p className="font-medium text-gray-900">Sign in to post or comment</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Reading is open, but writing is limited to verified UMich users so the board stays useful.
+              </p>
+              <Link href="/auth/login" className="btn-secondary mt-4">Sign in</Link>
+            </div>
+          </div>
+        )}
+
+        {!postCards.length ? (
+          <div className="card p-10 text-center text-gray-400">
+            <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-40" />
+            <p className="text-sm">No threads yet. Start the first one for this department.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {postCards.map(post => (
+              <Link
+                key={post.id}
+                href={`/boards/${department.slug}/${post.id}`}
+                className="card p-5 block hover:border-brand-200 hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="font-medium text-gray-900">{post.title}</h2>
+                    <p className="text-sm text-gray-600 leading-relaxed mt-2 line-clamp-3">
+                      {post.body}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="badge-gray">{post.commentCount} repl{post.commentCount === 1 ? 'y' : 'ies'}</div>
+                    <p className="text-xs text-gray-400 mt-2">{post.authorLabel}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
