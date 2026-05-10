@@ -1,18 +1,31 @@
 import { Navbar } from '@/components/Navbar'
 import { AdvisorSearch } from '@/components/advisors/AdvisorSearch'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export default async function AdvisorsPage() {
-  const supabase = createClient()
+  const supabase = createAdminClient()
 
-  const { data: advisorsData } = await supabase
-    .from('advisors')
-    .select('*, departments(name), advisor_aggregates(review_count, avg_overall)')
-    .eq('active', true)
-    .order('name')
-    .limit(200)
+  const [{ data: advisorsData }, { data: aggData }] = await Promise.all([
+    supabase
+      .from('advisors')
+      .select('*, departments(name)')
+      .eq('active', true)
+      .order('name')
+      .limit(200),
+    (supabase as any)
+      .from('advisor_aggregates')
+      .select('advisor_id, review_count, avg_overall'),
+  ])
 
-  const advisors = (advisorsData ?? []) as any[]
+  const aggMap = new Map(
+    ((aggData ?? []) as Array<{ advisor_id: string; review_count: number; avg_overall: number }>)
+      .map(a => [a.advisor_id, a])
+  )
+
+  const advisors = ((advisorsData ?? []) as any[]).map(a => ({
+    ...a,
+    advisor_aggregates: aggMap.get(a.id) ?? null,
+  }))
 
   return (
     <div className="min-h-screen bg-gray-50">
