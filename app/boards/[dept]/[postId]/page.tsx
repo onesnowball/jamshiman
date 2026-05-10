@@ -10,6 +10,7 @@ import { FlagButton } from '@/components/FlagButton'
 import { CommentForm } from '@/components/forms/CommentForm'
 import { UpvoteButton } from '@/components/boards/UpvoteButton'
 import { DeletePostButton } from '@/components/boards/DeletePostButton'
+import { CommentActions } from '@/components/boards/CommentActions'
 import type { Comment, Department, Post } from '@/types/database'
 
 type PostWithHandle = Post & { authorLabel: string; upvoteCount: number }
@@ -164,13 +165,18 @@ export default async function BoardPostPage({
                   {comment.body}
                 </p>
 
-                <UpvoteButton
-                  type="comment"
-                  id={comment.id}
-                  initialCount={comment.upvoteCount}
-                  initialVoted={false}
-                  isLoggedIn={!!viewer}
-                />
+                <div className="flex items-center justify-between">
+                  <UpvoteButton
+                    type="comment"
+                    id={comment.id}
+                    initialCount={comment.upvoteCount}
+                    initialVoted={false}
+                    isLoggedIn={!!viewer}
+                  />
+                  {viewer?.id === comment.author_id && (
+                    <CommentActions commentId={comment.id} initialBody={comment.body} />
+                  )}
+                </div>
               </div>
             ))
           )}
