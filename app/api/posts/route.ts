@@ -7,7 +7,7 @@ const PostSchema = z.object({
   dept_id: z.string().uuid().optional(),
   course_id: z.string().uuid().optional(),
   title: z.string().min(4).max(120),
-  body: z.string().min(20).max(5000),
+  body: z.string().min(10).max(5000),
   is_anonymous: z.boolean(),
 }).refine(
   data => Number(Boolean(data.dept_id)) + Number(Boolean(data.course_id)) === 1,
@@ -103,7 +103,12 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const parsed = PostSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+    const msgs = parsed.error.flatten()
+    const first =
+      msgs.formErrors[0] ??
+      Object.values(msgs.fieldErrors).flat()[0] ??
+      'Invalid input.'
+    return NextResponse.json({ error: first }, { status: 400 })
   }
 
   const supabaseAny = supabase as any
