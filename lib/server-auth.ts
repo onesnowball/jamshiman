@@ -80,9 +80,13 @@ export async function getOptionalViewer(): Promise<AppViewer | null> {
 
 export async function getActionClient() {
   const viewer = await getOptionalViewer()
+  // Always use the admin client for mutations — @supabase/ssr@0.3.0 cannot
+  // reliably attach the auth token to anon-client requests, so auth.uid()
+  // returns null and RLS insert/update policies always fail.
+  // Authentication is already enforced above via getOptionalViewer().
   return {
     viewer,
-    supabase: viewer?.isDevBypass ? createAdminClient() : createClient(),
+    supabase: createAdminClient(),
   }
 }
 
