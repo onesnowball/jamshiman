@@ -17,10 +17,23 @@ function readSessionFromCookie(): { access_token: string; user: { id: string; em
   const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
     .replace('https://', '')
     .split('.')[0]
-  const authCookie = cookieStore.get(`sb-${projectRef}-auth-token`)
-  if (!authCookie?.value) return null
+  const key = `sb-${projectRef}-auth-token`
+
+  // @supabase/ssr chunks large cookies as key.0, key.1, ...
+  // Try unchunked first, then reassemble chunks if needed.
+  const raw = cookieStore.get(key)?.value ?? (() => {
+    const parts: string[] = []
+    for (let i = 0; ; i++) {
+      const chunk = cookieStore.get(`${key}.${i}`)?.value
+      if (!chunk) break
+      parts.push(chunk)
+    }
+    return parts.length ? parts.join('') : null
+  })()
+
+  if (!raw) return null
   try {
-    const session = JSON.parse(authCookie.value)
+    const session = JSON.parse(raw)
     if (!session?.access_token || !session?.user?.id) return null
     return session
   } catch {
