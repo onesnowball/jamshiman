@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
       await supabase.from('post_votes').delete().eq('post_id', id).eq('user_id', viewer.id)
       return NextResponse.json({ voted: false })
     }
-    const { error } = await supabase.from('post_votes').insert({ post_id: id, user_id: viewer.id })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from('post_votes').insert({ post_id: id, user_id: viewer.id } as any)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   } else {
     const { data: existing } = await supabase.from('comment_votes').select('*').eq('comment_id', id).eq('user_id', viewer.id).maybeSingle()
@@ -30,7 +31,8 @@ export async function POST(req: NextRequest) {
       await supabase.from('comment_votes').delete().eq('comment_id', id).eq('user_id', viewer.id)
       return NextResponse.json({ voted: false })
     }
-    const { error } = await supabase.from('comment_votes').insert({ comment_id: id, user_id: viewer.id })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from('comment_votes').insert({ comment_id: id, user_id: viewer.id } as any)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
