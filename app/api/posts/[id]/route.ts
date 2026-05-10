@@ -21,9 +21,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  await supabase
+  await (supabase as any)
     .from('posts')
-    .update({ status: 'removed' } as any)
+    .update({ status: 'removed' })
     .eq('id', params.id)
 
   return NextResponse.json({ ok: true })
