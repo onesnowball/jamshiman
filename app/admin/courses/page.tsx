@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { BookOpen } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { CourseAdminManager } from '@/components/admin/CourseAdminManager'
-import { getAdminViewer } from '@/lib/server-auth'
+import { getAdminViewer, canAdminUniversity } from '@/lib/server-auth'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { Course, Department } from '@/types/database'
 
@@ -15,20 +15,23 @@ export default async function AdminCoursesPage() {
   const supabase = createAdminClient()
   const supabaseAny = supabase as any
 
+  const isGlobalAdmin = viewer.role === 'admin'
+  const adminUniversityIds = isGlobalAdmin ? null : viewer.campusAdminUniversityIds
+
+  let deptQuery = supabase.from('departments').select('*').eq('active', true).order('name')
+  if (adminUniversityIds) deptQuery = (deptQuery as any).in('university_id', adminUniversityIds)
+
   const [{ data: coursesData }, { data: deptData }] = await Promise.all([
-    supabaseAny
-      .from('courses')
-      .select('*, departments(name)')
-      .order('code'),
-    supabase
-      .from('departments')
-      .select('*')
-      .eq('active', true)
-      .order('name'),
+    supabaseAny.from('courses').select('*, departments(name)').order('code'),
+    deptQuery,
   ])
 
-  const courses = (coursesData ?? []) as CourseWithDept[]
+  const allCourses = (coursesData ?? []) as CourseWithDept[]
   const departments = (deptData ?? []) as Department[]
+  const deptIds = new Set(departments.map(d => d.id))
+
+  // Scope courses to the admin's universities via their departments
+  const courses = isGlobalAdmin ? allCourses : allCourses.filter(c => deptIds.has(c.dept_id))
 
   return (
     <div className="min-h-screen bg-gray-50">

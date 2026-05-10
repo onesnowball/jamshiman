@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import Link from 'next/link'
-import { Flag, Users, UserCog, Shield, BookOpen } from 'lucide-react'
+import { Flag, Users, UserCog, Shield, BookOpen, Layers } from 'lucide-react'
 import { getAdminViewer } from '@/lib/server-auth'
 
 export default async function AdminPage() {
@@ -52,10 +52,11 @@ export default async function AdminPage() {
 
         <div className="card divide-y divide-gray-50">
           {[
-            { href: '/admin/flags',    icon: Flag,     label: 'Review flagged content',  desc: 'Approve or remove reported posts and reviews' },
-            { href: '/admin/courses',  icon: BookOpen, label: 'Manage courses',           desc: 'Add, edit, and seed the course catalog' },
-            { href: '/admin/advisors', icon: UserCog,  label: 'Manage advisors',          desc: 'Create, edit, and deactivate advisor listings' },
-            { href: '/admin/access',   icon: Users,    label: 'Manage admin access',      desc: 'Promote signed-in users into the launch admin team' },
+            { href: '/admin/flags',       icon: Flag,     label: 'Review flagged content',  desc: 'Approve or remove reported posts and reviews' },
+            { href: '/admin/departments', icon: Layers,   label: 'Manage departments',       desc: 'Create board categories and academic departments per university' },
+            { href: '/admin/courses',     icon: BookOpen, label: 'Manage courses',           desc: 'Add, edit, and seed the course catalog' },
+            { href: '/admin/advisors',    icon: UserCog,  label: 'Manage advisors',          desc: 'Create, edit, and deactivate advisor listings' },
+            { href: '/admin/access',      icon: Users,    label: 'Manage admin access',      desc: 'Promote signed-in users and assign campus admins' },
           ].map(({ href, icon: Icon, label, desc }) => (
             <Link key={href} href={href} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors">
               <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">

@@ -33,6 +33,8 @@ export default async function BoardsPage({
     ...raw.filter(d => GENERAL_SLUGS.includes(d.slug)).sort((a, b) => GENERAL_SLUGS.indexOf(a.slug) - GENERAL_SLUGS.indexOf(b.slug)),
     ...raw.filter(d => !GENERAL_SLUGS.includes(d.slug)),
   ]
+  // Board filter chips: only general-category boards for this university
+  const boardFilterDepts = departments.filter(d => GENERAL_SLUGS.includes(d.slug))
   const deptMap = new Map(departments.map(d => [d.id, d]))
 
   const activeDept = searchParams?.dept
@@ -93,7 +95,7 @@ export default async function BoardsPage({
           >
             All
           </Link>
-          {departments.filter(d => GENERAL_SLUGS.includes(d.slug)).map(d => (
+          {boardFilterDepts.map(d => (
             <Link
               key={d.id}
               href={`/boards?dept=${d.slug}`}
