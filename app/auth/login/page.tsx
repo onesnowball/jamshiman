@@ -69,7 +69,7 @@ function LoginPageContent() {
       type: 'magiclink',
     })
     if (verifyError) {
-      setError('Invalid or expired code. Request a new one.')
+      setError(`Code error: ${verifyError.message}`)
       setStatus('verify')
       return
     }
