@@ -1,97 +1,107 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
-import { GraduationCap, ArrowRight, MessageSquare, BookOpen, Star, Lock } from 'lucide-react'
+import { GraduationCap, Search, ArrowRight } from 'lucide-react'
+
+const SCHOOLS = [
+  { name: 'University of Michigan',  short: 'UMich',    emoji: '〽️',  href: '/boards', live: true  },
+  { name: 'MIT',                     short: 'MIT',       emoji: '🦫',  href: null,      live: false },
+  { name: 'Stanford University',     short: 'Stanford',  emoji: '🌲',  href: null,      live: false },
+  { name: 'Carnegie Mellon',         short: 'CMU',       emoji: '🎓',  href: null,      live: false },
+  { name: 'UC Berkeley',             short: 'Berkeley',  emoji: '🐻',  href: null,      live: false },
+  { name: 'Georgia Tech',            short: 'GT',        emoji: '🐝',  href: null,      live: false },
+  { name: 'Purdue University',       short: 'Purdue',    emoji: '🚂',  href: null,      live: false },
+  { name: 'Caltech',                 short: 'Caltech',   emoji: '🔭',  href: null,      live: false },
+  { name: 'University of Illinois',  short: 'UIUC',      emoji: '🌽',  href: null,      live: false },
+  { name: 'Cornell University',      short: 'Cornell',   emoji: '🐻',  href: null,      live: false },
+  { name: 'Princeton University',    short: 'Princeton', emoji: '🐯',  href: null,      live: false },
+  { name: 'UT Austin',               short: 'UT Austin', emoji: '🤘',  href: null,      live: false },
+]
 
 export default function Home() {
+  const [query, setQuery] = useState('')
+
+  const filtered = query.trim()
+    ? SCHOOLS.filter(s =>
+        s.name.toLowerCase().includes(query.toLowerCase()) ||
+        s.short.toLowerCase().includes(query.toLowerCase())
+      )
+    : SCHOOLS
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Nav */}
-      <nav className="border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-semibold text-gray-900">
-            <GraduationCap className="w-5 h-5 text-brand-600" />
-            jamshiman
-          </div>
-          <Link href="/auth/login" className="btn-primary text-sm">
-            Sign in with UMich email
-          </Link>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg, #0a0f1e 0%, #13246a 60%, #0f3dd4 100%)' }}>
+
+      {/* Header */}
+      <header className="max-w-5xl mx-auto w-full px-6 h-14 flex items-center">
+        <div className="flex items-center gap-2 font-semibold text-white">
+          <GraduationCap className="w-5 h-5 text-brand-300" />
+          <span>jamshiman</span>
         </div>
-      </nav>
+      </header>
 
-      <main className="max-w-4xl mx-auto px-6">
-        {/* Hero */}
-        <div className="py-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-brand-50 border border-brand-100 text-brand-700 rounded-full px-4 py-1.5 text-sm font-medium mb-8">
-            <Lock className="w-3.5 h-3.5" />
-            UMich students only — verified by .edu email
-          </div>
+      {/* Hero */}
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <p className="text-brand-200 text-sm font-medium tracking-widest uppercase mb-4 opacity-80">
+          Campus life, honestly
+        </p>
+        <h1 className="text-4xl sm:text-6xl font-bold text-white text-center mb-4 tracking-tight leading-tight">
+          Find your campus.
+        </h1>
+        <p className="text-blue-200 text-base sm:text-lg text-center mb-10 max-w-sm opacity-70 leading-relaxed">
+          Advisor reviews, course ratings, and anonymous boards — verified by your .edu email.
+        </p>
 
-          <h1 className="text-5xl font-semibold text-gray-900 leading-tight tracking-tight mb-5">
-            The campus community<br />built for grad students
-          </h1>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto mb-10 leading-relaxed">
-            Honest advisor reviews, real course feedback, and anonymous department boards —
-            all verified through your UMich email.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/auth/login" className="btn-primary py-3 px-8 text-base">
-              Get started <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="/boards" className="btn-secondary py-3 px-8 text-base">
-              Browse community
-            </Link>
-          </div>
+        {/* Search */}
+        <div className="relative w-full max-w-sm mb-8">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-300 opacity-60 pointer-events-none" />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search your school…"
+            className="w-full rounded-xl px-4 py-3 pl-10 text-white placeholder-blue-300 focus:outline-none focus:ring-2 focus:ring-brand-400 transition-all"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+          />
         </div>
 
-        {/* Access notice */}
-        <div className="rounded-2xl bg-gray-50 border border-gray-100 p-8 mb-16 text-center">
-          <p className="text-sm font-medium text-gray-900 mb-1">Who can join?</p>
-          <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Anyone with an active <strong>@umich.edu</strong> email address.
-            No passwords — we verify you once with a sign-in code sent to your school inbox.
-            Your email is never visible to other users.
-          </p>
-        </div>
-
-        {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-20">
-          {[
-            {
-              href: '/boards',
-              icon: MessageSquare,
-              label: 'Community boards',
-              desc: 'Anonymous threads by department. Ask the questions people usually text a friend about.',
-            },
-            {
-              href: '/advisors',
-              icon: Star,
-              label: 'Advisor reviews',
-              desc: 'Structured, anonymous reviews from lab members, committee students, and collaborators.',
-            },
-            {
-              href: '/courses',
-              icon: BookOpen,
-              label: 'Course reviews',
-              desc: 'Real workload, instruction quality, and usefulness ratings from students who took the class.',
-            },
-          ].map(({ href, icon: Icon, label, desc }) => (
-            <Link
-              key={href}
-              href={href}
-              className="group rounded-2xl border border-gray-100 bg-white p-6 hover:border-brand-200 hover:shadow-md transition-all"
-            >
-              <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-4 group-hover:bg-brand-100 transition-colors">
-                <Icon className="w-5 h-5 text-brand-600" />
+        {/* School grid */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 w-full max-w-xl">
+          {filtered.map(school =>
+            school.live ? (
+              <Link
+                key={school.name}
+                href={school.href!}
+                className="group relative rounded-2xl p-4 text-center transition-all hover:scale-105 hover:shadow-2xl"
+                style={{ background: 'rgba(63,114,255,0.25)', border: '1px solid rgba(63,114,255,0.5)' }}
+              >
+                <div className="text-3xl mb-2">{school.emoji}</div>
+                <div className="text-sm font-bold text-white">{school.short}</div>
+                <div className="text-[10px] text-brand-300 mt-0.5 font-medium">Live ✓</div>
+                <ArrowRight className="absolute top-3 right-3 w-3 h-3 text-brand-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
+            ) : (
+              <div
+                key={school.name}
+                className="rounded-2xl p-4 text-center cursor-not-allowed select-none"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <div className="text-3xl mb-2 opacity-40">{school.emoji}</div>
+                <div className="text-sm font-semibold text-white opacity-30">{school.short}</div>
+                <div className="text-[10px] text-gray-500 mt-0.5">Soon</div>
               </div>
-              <p className="font-medium text-gray-900 mb-1">{label}</p>
-              <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
-            </Link>
-          ))}
+            )
+          )}
         </div>
+
+        {query.trim() && filtered.length === 0 && (
+          <p className="text-blue-300 opacity-60 mt-6 text-sm">
+            Not here yet — but yours could be next.
+          </p>
+        )}
       </main>
 
-      <footer className="border-t border-gray-100 py-6 text-center text-xs text-gray-400">
-        UMich grad students only · No passwords · Your email stays private
+      <footer className="py-6 text-center text-xs opacity-30 text-white">
+        Verified .edu only · Anonymous by default · No passwords
       </footer>
     </div>
   )
