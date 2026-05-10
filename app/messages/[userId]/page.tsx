@@ -42,7 +42,7 @@ export default async function MessageThreadPage({
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Navbar isAdmin={viewer.role === 'admin'} />
+      <Navbar />
       <main className="max-w-2xl mx-auto w-full px-4 py-6 page-enter flex flex-col gap-4" style={{ minHeight: 'calc(100vh - 52px)' }}>
 
         <div className="flex items-center gap-3">

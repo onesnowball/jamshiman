@@ -31,7 +31,7 @@ export default async function MessagesPage() {
     if (msg.recipient_id === viewer.id && !msg.read_at) convoMap.get(otherId)!.unread++
   }
 
-  const otherIds = [...convoMap.keys()]
+  const otherIds = Array.from(convoMap.keys())
   const emailMap = await getAuthEmailMap(otherIds)
   const conversations = otherIds.map(id => ({
     userId: id,
@@ -41,7 +41,7 @@ export default async function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar isAdmin={viewer.role === 'admin'} />
+      <Navbar />
       <main className="max-w-2xl mx-auto px-4 py-6 page-enter space-y-4">
         <h1 className="text-xl font-semibold text-gray-900">Messages</h1>
 

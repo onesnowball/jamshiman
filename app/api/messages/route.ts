@@ -27,7 +27,7 @@ export async function GET() {
     if (msg.recipient_id === viewer.id && !msg.read_at) convoMap.get(otherId)!.unread++
   }
 
-  const otherIds = [...convoMap.keys()]
+  const otherIds = Array.from(convoMap.keys())
   const emailMap = await getAuthEmailMap(otherIds)
   const conversations = otherIds.map(id => ({
     userId: id,

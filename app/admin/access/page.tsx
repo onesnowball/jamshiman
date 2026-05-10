@@ -35,7 +35,7 @@ export default async function AdminAccessPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar isAdmin />
+      <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8 page-enter space-y-6">
         <div className="flex items-center gap-3">
           <Shield className="w-5 h-5 text-brand-600" />

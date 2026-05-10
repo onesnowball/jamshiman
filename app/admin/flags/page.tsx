@@ -94,7 +94,7 @@ export default async function AdminFlagsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar isAdmin />
+      <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-6">
           <Shield className="w-5 h-5 text-red-500" />

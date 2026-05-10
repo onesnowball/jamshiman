@@ -98,7 +98,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar isAdmin={viewer.role === 'admin'} />
+      <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8 page-enter space-y-6">
         <section className="card p-6">
           <div className="flex items-start gap-4">
