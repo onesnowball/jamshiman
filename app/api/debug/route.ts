@@ -6,10 +6,10 @@ export async function GET() {
   const cookieStore = cookies()
   const allCookies = cookieStore.getAll().map(c => c.name)
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
   return NextResponse.json({
-    userId: user?.id ?? null,
-    email: user?.email ?? null,
+    userId: session?.user?.id ?? null,
+    email: session?.user?.email ?? null,
     cookies: allCookies,
   })
 }

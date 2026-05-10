@@ -31,10 +31,12 @@ export async function getOptionalViewer(): Promise<AppViewer | null> {
   }
 
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return null
+  const user = session.user
 
-  const { data: profileData } = await supabase
+  const adminSupabase = createAdminClient()
+  const { data: profileData } = await adminSupabase
     .from('users')
     .select('*')
     .eq('id', user.id)
