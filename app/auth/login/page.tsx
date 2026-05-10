@@ -7,7 +7,6 @@ import { GraduationCap, Mail, AlertCircle, Loader2, Shield, KeyRound } from 'luc
 import {
   getPublicAllowedSchoolDomains,
   getPublicPrimarySchoolDomain,
-  getSchoolEmailPlaceholder,
   isAllowedSchoolEmail,
   normalizeEmail,
 } from '@/lib/auth'
@@ -24,6 +23,17 @@ function LoginPageContent() {
   const devBypassEnabled = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true'
   const allowedDomains = getPublicAllowedSchoolDomains()
   const primaryDomain = getPublicPrimarySchoolDomain()
+
+  // If coming from the school picker, scope the UI to that school
+  const schoolParam = searchParams.get('school')?.toLowerCase() ?? ''
+  // Trust the URL param directly for display (email validation still enforces allowed domains on submit)
+  const displayDomain = schoolParam.includes('.') ? schoolParam : primaryDomain
+  const emailPlaceholder = `you@${displayDomain}`
+
+  const schoolLabel: Record<string, string> = {
+    'umich.edu': 'UMich',
+    'northwestern.edu': 'Northwestern',
+  }
 
   useEffect(() => {
     const errorCode = searchParams.get('error')
@@ -123,7 +133,7 @@ function LoginPageContent() {
             <GraduationCap className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">jamshiman</h1>
-          <p className="text-gray-500 text-sm mt-1">Campus community for grad students</p>
+          <p className="text-gray-500 text-sm mt-1">Campus community for students</p>
         </div>
 
         <div className="card p-6">
@@ -184,14 +194,11 @@ function LoginPageContent() {
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    placeholder={getSchoolEmailPlaceholder()}
+                    placeholder={emailPlaceholder}
                     required
                     className="input pl-9"
                   />
                 </div>
-                <p className="text-xs text-gray-400">
-                  Only {allowedDomains.map(d => `@${d}`).join(', ')} addresses accepted.
-                </p>
               </div>
 
               {(status === 'error' || error) && (
@@ -235,7 +242,7 @@ function LoginPageContent() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          {primaryDomain === 'umich.edu' ? 'UMich' : primaryDomain} grad students only.
+          {schoolLabel[displayDomain] ?? displayDomain} students only.
           No passwords. No tracking.
         </p>
       </div>

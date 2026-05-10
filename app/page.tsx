@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { GraduationCap, Search, ArrowRight } from 'lucide-react'
 
 const SCHOOLS = [
-  { name: 'University of Michigan',  short: 'UMich',       emoji: '〽️',  href: '/auth/login', live: true  },
-  { name: 'Northwestern University', short: 'Northwestern', emoji: '🐾',  href: '/auth/login', live: true  },
+  { name: 'University of Michigan',  short: 'UMich',       emoji: '〽️',  href: '/auth/login?school=umich.edu',         live: true  },
+  { name: 'Northwestern University', short: 'Northwestern', emoji: '🐾',  href: '/auth/login?school=northwestern.edu',  live: true  },
   { name: 'MIT',                     short: 'MIT',          emoji: '🦫',  href: null,          live: false },
   { name: 'Stanford University',     short: 'Stanford',     emoji: '🌲',  href: null,          live: false },
   { name: 'Carnegie Mellon',         short: 'CMU',          emoji: '🎓',  href: null,          live: false },
