@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MessageSquare, ThumbsUp } from 'lucide-react'
+import { MessageSquare, ThumbsUp, Plus } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
