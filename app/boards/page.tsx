@@ -86,7 +86,7 @@ export default async function BoardsPage({
           >
             All
           </Link>
-          {departments.map(d => (
+          {departments.filter(d => GENERAL_SLUGS.includes(d.slug)).map(d => (
             <Link
               key={d.id}
               href={`/boards?dept=${d.slug}`}
@@ -96,7 +96,7 @@ export default async function BoardsPage({
                   : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'
               }`}
             >
-              {d.name.replace(' Engineering', '').replace(' Sciences', '')}
+              {d.name}
             </Link>
           ))}
         </div>
