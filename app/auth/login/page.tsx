@@ -106,8 +106,13 @@ function LoginPageContent() {
       return
     }
 
-    const dest = schoolParam ? `/boards?uni=${schoolParam}` : '/boards'
-    window.location.href = dest
+    // Persist the selected school so all pages scope correctly
+    if (schoolParam) {
+      document.cookie = `active_uni=${schoolParam}; path=/; max-age=86400; SameSite=Lax`
+    } else {
+      document.cookie = 'active_uni=; path=/; max-age=0'
+    }
+    window.location.href = '/boards'
   }
 
   async function handleDevLogin() {

@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { Navbar } from '@/components/Navbar'
 import { AdvisorSearch } from '@/components/advisors/AdvisorSearch'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -13,13 +14,16 @@ export default async function AdvisorsPage({
   const isGlobalAdmin = viewer?.role === 'admin'
 
   let scopedUniversityId: string | null = null
-  if (isGlobalAdmin && searchParams?.uni) {
-    const { data: uniRow } = await supabase
-      .from('universities')
-      .select('id')
-      .eq('domain', searchParams.uni)
-      .single()
-    scopedUniversityId = (uniRow as { id: string } | null)?.id ?? null
+  if (isGlobalAdmin) {
+    const uniDomain = searchParams?.uni ?? cookies().get('active_uni')?.value ?? null
+    if (uniDomain) {
+      const { data: uniRow } = await supabase
+        .from('universities')
+        .select('id')
+        .eq('domain', uniDomain)
+        .single()
+      scopedUniversityId = (uniRow as { id: string } | null)?.id ?? null
+    }
   }
   const effectiveUniversityId = scopedUniversityId ?? viewer?.university_id ?? null
 
