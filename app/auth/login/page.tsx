@@ -96,7 +96,7 @@ function LoginPageContent() {
       return
     }
 
-    window.location.href = '/advisors'
+    window.location.href = '/boards'
   }
 
   async function handleDevLogin() {
