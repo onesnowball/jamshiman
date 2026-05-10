@@ -73,7 +73,30 @@ function LoginPageContent() {
       setStatus('verify')
       return
     }
-    window.location.href = '/auth/setup'
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setError('Session not established. Please try again.')
+      setStatus('verify')
+      return
+    }
+
+    const res = await fetch('/api/auth/setup', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${session.access_token}` },
+    })
+
+    if (!res.ok) {
+      const json = await res.json()
+      setError(json.error === 'invalid_domain'
+        ? 'This email domain is not allowed.'
+        : 'Profile setup failed. Please try again.'
+      )
+      setStatus('error')
+      return
+    }
+
+    window.location.href = '/advisors'
   }
 
   async function handleDevLogin() {
