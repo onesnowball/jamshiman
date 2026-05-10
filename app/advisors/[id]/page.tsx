@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/Navbar'
 import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
 import { RatingDisplay, StarRating } from '@/components/ui/StarRating'
-import { FlaskConical, Clock, GraduationCap, Plus } from 'lucide-react'
+import { FlaskConical, Clock, Plus } from 'lucide-react'
 import { FlagButton } from '@/components/FlagButton'
 import type { Advisor, AdvisorRatings, AdvisorReview, Database } from '@/types/database'
 
@@ -44,16 +44,12 @@ export default async function AdvisorPage({ params }: { params: { id: string } }
     .single()
   const stats = statsData as AdvisorAggregate | null
 
-  const showReviews = (stats?.review_count ?? 0) >= 3
-
-  const { data: reviewsData } = showReviews
-    ? await supabase
-        .from('advisor_reviews')
-        .select('id, degree_type, ratings, anonymized_text, years_in_lab, is_current, created_at')
-        .eq('advisor_id', params.id)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-    : { data: [] }
+  const { data: reviewsData } = await supabase
+    .from('advisor_reviews')
+    .select('id, degree_type, ratings, anonymized_text, years_in_lab, is_current, created_at')
+    .eq('advisor_id', params.id)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
   const reviews = (reviewsData ?? []) as AdvisorPageReview[]
 
   return (
@@ -93,7 +89,7 @@ export default async function AdvisorPage({ params }: { params: { id: string } }
                 </div>
               )}
 
-              {stats && showReviews && (
+              {stats && reviews.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
                   <RatingDisplay value={stats.avg_overall} count={stats.review_count} />
                   <div className="space-y-1.5 mt-3">
@@ -133,26 +129,18 @@ export default async function AdvisorPage({ params }: { params: { id: string } }
           {/* Right: reviews */}
           <div className="lg:col-span-2 space-y-4">
             <h2 className="font-medium text-gray-900">
-              {showReviews ? `${stats?.review_count} reviews` : 'Reviews'}
+              {reviews.length > 0 ? `${reviews.length} review${reviews.length === 1 ? '' : 's'}` : 'Reviews'}
             </h2>
 
-            {!showReviews && (
+            {!reviews.length && (
               <div className="card p-8 text-center text-gray-400">
                 <GraduationCap className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  Not enough reviews yet
-                </p>
-                <p className="text-xs">
-                  Reviews are shown once 3 or more exist. This protects individual privacy in small labs.
-                  {stats?.review_count
-                    ? ` ${stats.review_count} review${stats.review_count > 1 ? 's' : ''} so far.`
-                    : ' Be the first to review.'
-                  }
-                </p>
+                <p className="text-sm font-medium text-gray-600 mb-1">No reviews yet</p>
+                <p className="text-xs">Be the first to share your experience with this advisor.</p>
               </div>
             )}
 
-            {showReviews && reviews.map((review) => (
+            {reviews.map((review) => (
               <div key={review.id} className="card p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

@@ -33,7 +33,7 @@ export async function AdvisorsList({ q, dept }: { q?: string; dept?: string }) {
     <div className="space-y-3">
       {advisors.map((advisor: any) => {
         const stats = advisor.advisor_aggregates
-        const hasReviews = stats?.review_count >= 3
+        const hasReviews = stats?.review_count >= 1
 
         return (
           <Link

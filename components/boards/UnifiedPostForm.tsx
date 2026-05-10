@@ -11,7 +11,7 @@ export function UnifiedPostForm({ departments }: { departments: Department[] }) 
   const [isAnonymous, setIsAnonymous] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
 
   async function handleSubmit() {
     setSubmitting(true)

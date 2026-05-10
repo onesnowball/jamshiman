@@ -55,7 +55,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
           {[
-            { href: '/courses', icon: BookOpen, title: 'Courses', desc: 'Search the seeded launch catalog and unlock public reviews after 3 submissions.' },
+            { href: '/courses', icon: BookOpen, title: 'Courses', desc: 'Search the catalog, read student reviews, and discuss courses with classmates.' },
             { href: '/boards', icon: MessageSquare, title: 'Boards', desc: 'Department-specific threads for anonymous questions, advice, and situational context.' },
             { href: '/schedule', icon: Calendar, title: 'Schedule', desc: 'Build a private weekly plan with manual course meeting blocks.' },
           ].map(({ href, icon: Icon, title, desc }) => (

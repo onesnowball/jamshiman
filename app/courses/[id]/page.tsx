@@ -84,8 +84,7 @@ export default async function CoursePage({
     .eq('board_type', 'course')
     .eq('status', 'active')
 
-  const showReviews = reviews.length >= 3
-  const averages = showReviews ? averageRatings(reviews) : null
+  const averages = reviews.length > 0 ? averageRatings(reviews) : null
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -202,23 +201,18 @@ export default async function CoursePage({
             {activeTab === 'reviews' ? (
               <>
                 <h2 className="font-medium text-gray-900">
-                  {showReviews ? `${reviews.length} reviews` : 'Reviews'}
+                  {reviews.length > 0 ? `${reviews.length} review${reviews.length === 1 ? '' : 's'}` : 'Reviews'}
                 </h2>
 
-                {!showReviews && (
+                {!reviews.length && (
                   <div className="card p-8 text-center text-gray-400">
                     <GraduationCap className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Reviews unlock after 3 submissions
-                    </p>
-                    <p className="text-xs">
-                      Course reviews stay hidden until there are at least 3, which keeps small-class feedback safer to share.
-                      {reviews.length ? ` ${reviews.length} review${reviews.length === 1 ? '' : 's'} so far.` : ' Be the first.'}
-                    </p>
+                    <p className="text-sm font-medium text-gray-600 mb-1">No reviews yet</p>
+                    <p className="text-xs">Be the first to review this course.</p>
                   </div>
                 )}
 
-                {showReviews && reviews.map(review => (
+                {reviews.map(review => (
                   <div key={review.id} className="card p-5 space-y-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2">
