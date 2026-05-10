@@ -12,7 +12,7 @@ const CourseReviewSchema = z.object({
     workload: z.number().min(1).max(5),
     professor: z.number().min(1).max(5),
   }),
-  original_text: z.string().min(40).max(3000),
+  original_text: z.string().min(1).max(3000),
 })
 
 export async function POST(req: NextRequest) {

@@ -21,6 +21,12 @@ export function CourseReviewForm({
   const [step, setStep] = useState<'form' | 'done'>('form')
   const [degreeType, setDegreeType] = useState<'ms' | 'phd'>('phd')
   const [semester, setSemester] = useState('Fall 2026')
+
+  const SEMESTER_OPTIONS = (() => {
+    const terms = ['Fall', 'Spring-Summer', 'Winter']
+    const years = [2026, 2025, 2024, 2023, 2022, 2021]
+    return terms.flatMap(term => years.map(year => `${term} ${year}`))
+  })()
   const [ratings, setRatings] = useState<CourseRatings>({
     difficulty: 0,
     usefulness: 0,
@@ -32,7 +38,7 @@ export function CourseReviewForm({
   const [error, setError] = useState('')
 
   const allRated = Object.values(ratings).every(value => value > 0)
-  const canSubmit = originalText.trim().length >= 40 && semester.trim().length >= 4
+  const canSubmit = originalText.trim().length >= 1 && semester.length >= 4
 
   async function handleSubmit() {
     setIsSubmitting(true)
@@ -70,7 +76,7 @@ export function CourseReviewForm({
         <CheckCircle className="w-12 h-12 text-green-500" />
         <h3 className="text-lg font-medium text-gray-900">Course review submitted</h3>
         <p className="text-sm text-gray-500 max-w-sm">
-          Thanks. Reviews become visible once at least 3 students have reviewed this course.
+          Thanks for sharing your experience with this course.
         </p>
       </div>
     )
@@ -106,12 +112,15 @@ export function CourseReviewForm({
 
         <div className="space-y-1.5">
           <label className="section-label">Semester taken</label>
-          <input
+          <select
             value={semester}
             onChange={event => setSemester(event.target.value)}
-            placeholder="Fall 2026"
             className="input"
-          />
+          >
+            {SEMESTER_OPTIONS.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -138,15 +147,9 @@ export function CourseReviewForm({
           rows={6}
           value={originalText}
           onChange={event => setOriginalText(event.target.value)}
-          placeholder="Share what the workload, instruction quality, and value of this course were actually like. Minimum 40 characters."
+          placeholder="Share what the workload, instruction quality, and value of this course were actually like."
           className="textarea"
         />
-        <div className={clsx(
-          'text-xs text-right transition-colors',
-          originalText.length < 40 ? 'text-gray-300' : 'text-gray-400'
-        )}>
-          {originalText.length} chars {originalText.length < 40 && `(need ${40 - originalText.length} more)`}
-        </div>
       </div>
 
       {error && (
