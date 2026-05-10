@@ -64,7 +64,7 @@ function LoginPageContent() {
     const { error: verifyError } = await supabase.auth.verifyOtp({
       email: normalizedEmail,
       token: code.trim(),
-      type: 'email',
+      type: 'magiclink',
     })
     if (verifyError) {
       setError('Invalid or expired code. Request a new one.')
@@ -108,7 +108,7 @@ function LoginPageContent() {
                 <KeyRound className="w-8 h-8 text-brand-600 mx-auto mb-2" />
                 <p className="font-medium text-gray-900">Enter your code</p>
                 <p className="text-sm text-gray-500 mt-1">
-                  We sent a 6-digit code to <strong>{email}</strong>
+                  We sent a sign-in code to <strong>{email}</strong>
                 </p>
               </div>
 
