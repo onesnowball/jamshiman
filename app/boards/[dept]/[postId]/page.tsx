@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Lock, MessageSquareText } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
@@ -19,7 +19,7 @@ export default async function BoardPostPage({
 }: {
   params: { dept: string; postId: string }
 }) {
-  const supabase = createClient()
+  const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
 
   const { data: departmentData } = await supabase

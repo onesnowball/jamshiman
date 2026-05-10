@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { CalendarDays, MessageSquare, NotebookPen, UserCircle2 } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
-import { createAdminClient, createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import type { AdvisorReview, CourseReview, Post, Comment, Schedule } from '@/types/database'
 
@@ -54,7 +54,7 @@ export default async function ProfilePage() {
   const viewer = await getOptionalViewer()
   if (!viewer) redirect('/auth/login')
 
-  const supabase = viewer.isDevBypass ? createAdminClient() : createClient()
+  const supabase = createAdminClient()
 
   const [
     { data: advisorReviewsData },

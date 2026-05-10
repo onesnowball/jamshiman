@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus } from 'lucide-react'
+import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus, UserCircle, Shield } from 'lucide-react'
 import { clsx } from 'clsx'
 
 const navItems = [
@@ -41,13 +41,41 @@ export function Navbar({ isAdmin = false, showNewPost = false }: { isAdmin?: boo
           ))}
         </div>
 
-        <Link
-          href="/boards/new"
-          className="flex-shrink-0 flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Post</span>
-        </Link>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={clsx(
+                'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm transition-colors',
+                path.startsWith('/admin')
+                  ? 'bg-red-50 text-red-700 font-medium'
+                  : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+              )}
+              title="Admin"
+            >
+              <Shield className="w-4 h-4" />
+            </Link>
+          )}
+          <Link
+            href="/profile"
+            className={clsx(
+              'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm transition-colors',
+              path.startsWith('/profile')
+                ? 'bg-brand-50 text-brand-700 font-medium'
+                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+            )}
+            title="Account"
+          >
+            <UserCircle className="w-4 h-4" />
+          </Link>
+          <Link
+            href="/boards/new"
+            className="flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Post</span>
+          </Link>
+        </div>
       </div>
     </nav>
   )

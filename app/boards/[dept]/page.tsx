@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Lock, MessageSquare } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { BoardPostForm } from '@/components/forms/BoardPostForm'
@@ -11,7 +11,7 @@ import type { Department, Post } from '@/types/database'
 type BoardPost = Post
 
 export default async function DepartmentBoardPage({ params }: { params: { dept: string } }) {
-  const supabase = createClient()
+  const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
 
   const { data: departmentData } = await supabase
