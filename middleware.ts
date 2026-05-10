@@ -1,12 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import type { Database } from '@/types/database'
-
-type CookieToSet = {
-  name: string
-  value: string
-  options?: Record<string, unknown>
-}
 
 // Routes anyone can visit without being signed in
 const PUBLIC_PATHS = ['/', '/auth']
@@ -15,35 +7,31 @@ function isPublic(pathname: string) {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
 }
 
-export async function middleware(request: NextRequest) {
+function hasSessionCookie(request: NextRequest): boolean {
+  const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
+    .replace('https://', '')
+    .split('.')[0]
+  const key = `sb-${projectRef}-auth-token`
+
+  // Check unchunked cookie
+  if (request.cookies.has(key)) return true
+
+  // Check chunked cookie (.0 chunk is enough to confirm a session exists)
+  if (request.cookies.has(`${key}.0`)) return true
+
+  return false
+}
+
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  let response = NextResponse.next({ request: { headers: request.headers } })
-
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return request.cookies.getAll() },
-        setAll(cookiesToSet: CookieToSet[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request: { headers: request.headers } })
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-        },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user && !isPublic(pathname)) {
+  if (!isPublic(pathname) && !hasSessionCookie(request)) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/auth/login'
     return NextResponse.redirect(loginUrl)
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
