@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/Navbar'
 import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
 import { RatingDisplay, StarRating } from '@/components/ui/StarRating'
-import { FlaskConical, Clock, Plus } from 'lucide-react'
+import { FlaskConical, Clock, GraduationCap, Plus } from 'lucide-react'
 import { FlagButton } from '@/components/FlagButton'
 import type { Advisor, AdvisorRatings, AdvisorReview, Database } from '@/types/database'
 

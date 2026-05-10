@@ -15,23 +15,25 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
 
   const { type, id } = parsed.data
-  const table = type === 'post' ? 'post_votes' : 'comment_votes'
-  const col   = type === 'post' ? 'post_id'   : 'comment_id'
 
-  const { data: existing } = await supabase
-    .from(table)
-    .select('*')
-    .eq(col, id)
-    .eq('user_id', viewer.id)
-    .maybeSingle()
-
-  if (existing) {
-    await supabase.from(table).delete().eq(col, id).eq('user_id', viewer.id)
-    return NextResponse.json({ voted: false })
+  if (type === 'post') {
+    const { data: existing } = await supabase.from('post_votes').select('*').eq('post_id', id).eq('user_id', viewer.id).maybeSingle()
+    if (existing) {
+      await supabase.from('post_votes').delete().eq('post_id', id).eq('user_id', viewer.id)
+      return NextResponse.json({ voted: false })
+    }
+    const { error } = await supabase.from('post_votes').insert({ post_id: id, user_id: viewer.id })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  } else {
+    const { data: existing } = await supabase.from('comment_votes').select('*').eq('comment_id', id).eq('user_id', viewer.id).maybeSingle()
+    if (existing) {
+      await supabase.from('comment_votes').delete().eq('comment_id', id).eq('user_id', viewer.id)
+      return NextResponse.json({ voted: false })
+    }
+    const { error } = await supabase.from('comment_votes').insert({ comment_id: id, user_id: viewer.id })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const { error } = await supabase.from(table).insert({ [col]: id, user_id: viewer.id })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ voted: true })
 }
 
@@ -44,24 +46,24 @@ export async function GET(req: NextRequest) {
 
   if (!type || !id) return NextResponse.json({ error: 'Missing params' }, { status: 400 })
 
-  const table = type === 'post' ? 'post_votes' : 'comment_votes'
-  const col   = type === 'post' ? 'post_id'    : 'comment_id'
-
-  const { count } = await supabase
-    .from(table)
-    .select('*', { count: 'exact', head: true })
-    .eq(col, id)
-
+  let count = 0
   let voted = false
-  if (viewer) {
-    const { data } = await supabase
-      .from(table)
-      .select('*')
-      .eq(col, id)
-      .eq('user_id', viewer.id)
-      .maybeSingle()
-    voted = !!data
+
+  if (type === 'post') {
+    const { count: c } = await supabase.from('post_votes').select('*', { count: 'exact', head: true }).eq('post_id', id)
+    count = c ?? 0
+    if (viewer) {
+      const { data } = await supabase.from('post_votes').select('*').eq('post_id', id).eq('user_id', viewer.id).maybeSingle()
+      voted = !!data
+    }
+  } else {
+    const { count: c } = await supabase.from('comment_votes').select('*', { count: 'exact', head: true }).eq('comment_id', id)
+    count = c ?? 0
+    if (viewer) {
+      const { data } = await supabase.from('comment_votes').select('*').eq('comment_id', id).eq('user_id', viewer.id).maybeSingle()
+      voted = !!data
+    }
   }
 
-  return NextResponse.json({ count: count ?? 0, voted })
+  return NextResponse.json({ count, voted })
 }
