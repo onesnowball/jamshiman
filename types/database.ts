@@ -189,6 +189,16 @@ export interface Database {
         Insert: Omit<audit_log['Row'], 'id' | 'created_at'>
         Update: never
       }
+      post_votes: {
+        Row: { post_id: string; user_id: string; created_at: string }
+        Insert: { post_id: string; user_id: string }
+        Update: never
+      }
+      comment_votes: {
+        Row: { comment_id: string; user_id: string; created_at: string }
+        Insert: { comment_id: string; user_id: string }
+        Update: never
+      }
     }
     Views: {
       advisor_aggregates: {
