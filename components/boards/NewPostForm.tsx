@@ -35,7 +35,7 @@ export function NewPostForm({ departments }: { departments: Department[] }) {
   return (
     <div className="card p-6 space-y-5">
       <div className="space-y-1.5">
-        <label className="section-label">Department</label>
+        <label className="section-label">Board</label>
         <select value={deptId} onChange={e => setDeptId(e.target.value)} className="input">
           {departments.map(d => (
             <option key={d.id} value={d.id}>{d.name}</option>

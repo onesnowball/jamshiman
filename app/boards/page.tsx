@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { MessageSquare, Plus } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { UpvoteButton } from '@/components/boards/UpvoteButton'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
@@ -16,14 +16,20 @@ export default async function BoardsPage({
   searchParams?: { dept?: string }
 }) {
   const supabase = createClient()
+  const admin = createAdminClient()
   const viewer = await getOptionalViewer()
 
-  const { data: deptData } = await supabase
+  const { data: deptData } = await admin
     .from('departments')
     .select('*')
     .eq('active', true)
     .order('name')
-  const departments = (deptData ?? []) as Department[]
+  const raw = (deptData ?? []) as Department[]
+  const GENERAL_SLUGS = ['general', 'career', 'housing', 'research', 'wellbeing', 'marketplace']
+  const departments = [
+    ...raw.filter(d => GENERAL_SLUGS.includes(d.slug)).sort((a, b) => GENERAL_SLUGS.indexOf(a.slug) - GENERAL_SLUGS.indexOf(b.slug)),
+    ...raw.filter(d => !GENERAL_SLUGS.includes(d.slug)),
+  ]
   const deptMap = new Map(departments.map(d => [d.id, d]))
 
   const activeDept = searchParams?.dept
