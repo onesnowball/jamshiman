@@ -15,17 +15,22 @@ export default async function AdminAdvisorsPage() {
   if (!viewer) redirect('/auth/login')
 
   const supabase = createAdminClient()
+  const isGlobalAdmin = viewer.role === 'admin'
+  const uniIds = isGlobalAdmin ? null : viewer.campusAdminUniversityIds
+
+  let advisorQuery = supabase
+    .from('advisors')
+    .select('*, departments(name)')
+    .order('active', { ascending: false })
+    .order('name')
+  if (uniIds) advisorQuery = (advisorQuery as any).in('university_id', uniIds)
+
+  let deptQuery = supabase.from('departments').select('*').eq('active', true).order('name')
+  if (uniIds) deptQuery = (deptQuery as any).in('university_id', uniIds)
+
   const [{ data: advisorsData }, { data: departmentsData }] = await Promise.all([
-    supabase
-      .from('advisors')
-      .select('*, departments(name)')
-      .order('active', { ascending: false })
-      .order('name'),
-    supabase
-      .from('departments')
-      .select('*')
-      .eq('active', true)
-      .order('name'),
+    advisorQuery,
+    deptQuery,
   ])
 
   const advisors = (advisorsData ?? []) as AdminAdvisor[]

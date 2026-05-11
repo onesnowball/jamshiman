@@ -81,16 +81,47 @@ export default async function AdminFlagsPage() {
   if (!viewer) redirect('/auth/login')
   const supabase = createAdminClient()
 
+  const isGlobalAdmin = viewer.role === 'admin'
+  const uniIds = isGlobalAdmin ? null : viewer.campusAdminUniversityIds
+
   // ── 1. Pending flags ──────────────────────────────────────────────────────
-  const { data: flagsData } = await supabase
+  // Flags don't have a university_id, so we scope by fetching post/comment IDs
+  // that belong to this admin's universities first, then filter flags by those.
+  let flagQuery = supabase
     .from('flags')
-    .select(`
-      *,
-      reporter:reporter_id(id),
-      resolved_by_user:resolved_by(id)
-    `)
+    .select('*, reporter:reporter_id(id), resolved_by_user:resolved_by(id)')
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
+
+  if (uniIds) {
+    // Get post IDs in this admin's universities
+    const { data: uniPosts } = await supabase
+      .from('posts')
+      .select('id')
+      .in('university_id', uniIds)
+    const postIds = (uniPosts ?? []).map((p: { id: string }) => p.id)
+
+    // Get comment IDs from those posts
+    const { data: uniComments } = postIds.length
+      ? await supabase.from('comments').select('id').in('post_id', postIds)
+      : { data: [] }
+    const commentIds = (uniComments ?? []).map((c: { id: string }) => c.id)
+
+    // Get advisor/course review IDs for this university's advisors/courses
+    const { data: uniAdvisors } = await supabase.from('advisors').select('id').in('university_id', uniIds)
+    const advisorIds = (uniAdvisors ?? []).map((a: { id: string }) => a.id)
+    const { data: uniReviews } = advisorIds.length
+      ? await supabase.from('advisor_reviews').select('id').in('advisor_id', advisorIds)
+      : { data: [] }
+    const reviewIds = (uniReviews ?? []).map((r: { id: string }) => r.id)
+
+    const scopedContentIds = [...postIds, ...commentIds, ...reviewIds]
+    if (scopedContentIds.length) {
+      flagQuery = (flagQuery as any).in('content_id', scopedContentIds)
+    }
+  }
+
+  const { data: flagsData } = await flagQuery
   const flags = (flagsData ?? []) as Array<{
     id: string
     content_type: FlagContentType
@@ -105,36 +136,66 @@ export default async function AdminFlagsPage() {
   })))
 
   // ── 2. Pending delete requests ────────────────────────────────────────────
+  let pendingPostQuery = supabase
+    .from('posts')
+    .select('id, title, body, created_at, dept_id')
+    .eq('status', 'pending_delete')
+    .order('created_at', { ascending: false })
+  if (uniIds) pendingPostQuery = (pendingPostQuery as any).in('university_id', uniIds)
+
+  let pendingCommentQuery = supabase
+    .from('comments')
+    .select('id, body, created_at, post_id')
+    .eq('status', 'pending_delete')
+    .order('created_at', { ascending: false })
+
   const [{ data: pendingPostsData }, { data: pendingCommentsData }] = await Promise.all([
-    supabase
-      .from('posts')
-      .select('id, title, body, created_at, dept_id')
-      .eq('status', 'pending_delete')
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('comments')
-      .select('id, body, created_at, post_id')
-      .eq('status', 'pending_delete')
-      .order('created_at', { ascending: false }),
+    pendingPostQuery,
+    pendingCommentQuery,
   ])
-  const pendingPosts = (pendingPostsData ?? []) as ContentRow[]
-  const pendingComments = (pendingCommentsData ?? []) as ContentRow[]
+  let pendingPosts = (pendingPostsData ?? []) as ContentRow[]
+  let pendingComments = (pendingCommentsData ?? []) as ContentRow[]
+
+  // Scope comments to posts in this admin's universities
+  if (uniIds) {
+    const scopedPostIds = new Set(pendingPosts.map(p => p.id))
+    // Also need active post IDs to filter comments
+    const { data: activePosts } = await supabase.from('posts').select('id').in('university_id', uniIds)
+    const allScopedPostIds = new Set(Array.from(scopedPostIds).concat((activePosts ?? []).map((p: { id: string }) => p.id)))
+    pendingComments = pendingComments.filter(c => c.post_id && allScopedPostIds.has(c.post_id))
+  }
 
   // ── 3. Archived content ───────────────────────────────────────────────────
+  let archivedPostQuery = supabase
+    .from('posts')
+    .select('id, title, body, created_at, dept_id')
+    .eq('status', 'archived')
+    .order('created_at', { ascending: false })
+
+  let archivedCommentQuery = supabase
+    .from('comments')
+    .select('id, body, created_at, post_id')
+    .eq('status', 'archived')
+    .order('created_at', { ascending: false })
+
+  if (uniIds) {
+    archivedPostQuery = (archivedPostQuery as any).in('university_id', uniIds)
+  }
+
   const [{ data: archivedPostsData }, { data: archivedCommentsData }] = await Promise.all([
-    supabase
-      .from('posts')
-      .select('id, title, body, created_at, dept_id')
-      .eq('status', 'archived')
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('comments')
-      .select('id, body, created_at, post_id')
-      .eq('status', 'archived')
-      .order('created_at', { ascending: false }),
+    archivedPostQuery,
+    archivedCommentQuery,
   ])
-  const archivedPosts = (archivedPostsData ?? []) as ContentRow[]
-  const archivedComments = (archivedCommentsData ?? []) as ContentRow[]
+  let archivedPosts = (archivedPostsData ?? []) as ContentRow[]
+  let archivedComments = (archivedCommentsData ?? []) as ContentRow[]
+
+  // Scope archived comments to this admin's universities via post ownership
+  if (uniIds) {
+    const scopedArchivedPostIds = new Set(archivedPosts.map(p => p.id))
+    const { data: activePostsForArchived } = await supabase.from('posts').select('id').in('university_id', uniIds)
+    const allScopedForArchived = new Set(Array.from(scopedArchivedPostIds).concat((activePostsForArchived ?? []).map((p: { id: string }) => p.id)))
+    archivedComments = archivedComments.filter(c => c.post_id && allScopedForArchived.has(c.post_id))
+  }
 
   const pendingTotal = pendingPosts.length + pendingComments.length
   const archivedTotal = archivedPosts.length + archivedComments.length
