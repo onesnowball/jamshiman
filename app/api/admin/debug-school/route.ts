@@ -18,11 +18,13 @@ export async function GET(req: NextRequest) {
   const supabaseAny = supabase as any
 
   // 1. Resolve university
-  const { data: uni, error: uniErr } = await supabase
+  const { data: uniRaw, error: uniErr } = await supabaseAny
     .from('universities')
     .select('id, name, domain, active')
     .eq('domain', `${school}.edu`)
     .single()
+
+  const uni = uniRaw as { id: string; name: string; domain: string; active: boolean } | null
 
   if (!uni) {
     return NextResponse.json({ error: `No university found for domain ${school}.edu`, uniErr })
