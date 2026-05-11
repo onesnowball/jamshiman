@@ -145,16 +145,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: first }, { status: 400 })
   }
 
-  // Derive the school slug from the viewer's verified email domain
-  // e.g. "user@northwestern.edu" → "northwestern"
-  // This avoids an extra DB lookup and can never fall back to the wrong school.
-  const schoolSlug = viewer.email
-    ? (viewer.email.split('@')[1] ?? '').split('.')[0]
-    : null
-
-  if (!schoolSlug) {
-    return NextResponse.json({ error: 'Could not determine your university.' }, { status: 400 })
-  }
+  const isGlobalAdmin = viewer.role === 'admin'
 
   const supabaseAny = supabase as any
   let insertPayload: Record<string, unknown>
@@ -172,15 +163,21 @@ export async function POST(req: NextRequest) {
     }
 
     // H-4: Prevent cross-school posting — user must belong to the same university.
-    if ((course as { university_id: string }).university_id !== viewer.university_id) {
+    // Global admins are exempt and can post to any school's boards.
+    if (!isGlobalAdmin && (course as { university_id: string }).university_id !== viewer.university_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
+    const courseUniversityId = (course as { university_id: string }).university_id
+    const { data: uniData } = await supabase.from('universities').select('domain').eq('id', courseUniversityId).single()
+    const schoolSlug = uniData ? (uniData as { domain: string }).domain.split('.')[0] : null
+    if (!schoolSlug) return NextResponse.json({ error: 'Could not determine university.' }, { status: 400 })
 
     insertPayload = {
       author_id: viewer.id,
       dept_id: (course as { dept_id: string }).dept_id,
       course_id: parsed.data.course_id,
-      university_id: (course as { university_id: string }).university_id,
+      university_id: courseUniversityId,
       board_type: 'course',
       title: parsed.data.title.trim(),
       body: parsed.data.body.trim(),
@@ -200,15 +197,21 @@ export async function POST(req: NextRequest) {
     }
 
     // H-4: Prevent cross-school posting — user must belong to the same university.
-    if ((department as { university_id: string }).university_id !== viewer.university_id) {
+    // Global admins are exempt and can post to any school's boards.
+    if (!isGlobalAdmin && (department as { university_id: string }).university_id !== viewer.university_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
+    const deptUniversityId = (department as { university_id: string }).university_id
+    const { data: uniData } = await supabase.from('universities').select('domain').eq('id', deptUniversityId).single()
+    const schoolSlug = uniData ? (uniData as { domain: string }).domain.split('.')[0] : null
+    if (!schoolSlug) return NextResponse.json({ error: 'Could not determine university.' }, { status: 400 })
 
     insertPayload = {
       author_id: viewer.id,
       dept_id: parsed.data.dept_id,
       course_id: null,
-      university_id: (department as { university_id: string }).university_id,
+      university_id: deptUniversityId,
       board_type: 'department',
       title: parsed.data.title.trim(),
       body: parsed.data.body.trim(),
