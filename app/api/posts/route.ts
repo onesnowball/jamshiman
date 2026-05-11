@@ -121,6 +121,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: first }, { status: 400 })
   }
 
+  // Derive the school slug from the viewer's verified email domain
+  // e.g. "user@northwestern.edu" → "northwestern"
+  // This avoids an extra DB lookup and can never fall back to the wrong school.
+  const schoolSlug = viewer.email
+    ? (viewer.email.split('@')[1] ?? '').split('.')[0]
+    : null
+
+  if (!schoolSlug) {
+    return NextResponse.json({ error: 'Could not determine your university.' }, { status: 400 })
+  }
+
   const supabaseAny = supabase as any
   let insertPayload: Record<string, unknown>
   let postUrl = ''
@@ -152,10 +163,7 @@ export async function POST(req: NextRequest) {
       is_anonymous: parsed.data.is_anonymous,
       status: 'active',
     }
-    // Look up university slug for the URL
-    const { data: courseUni } = await supabase.from('universities').select('domain').eq('id', (course as { university_id: string }).university_id).single()
-    const courseSchool = courseUni ? (courseUni as { domain: string }).domain.split('.')[0] : 'umich'
-    postUrl = `/${courseSchool}/courses/${parsed.data.course_id}/discussion`
+    postUrl = `/${schoolSlug}/courses/${parsed.data.course_id}/discussion`
   } else {
     const { data: department } = await supabase
       .from('departments')
@@ -183,11 +191,7 @@ export async function POST(req: NextRequest) {
       is_anonymous: parsed.data.is_anonymous,
       status: 'active',
     }
-
-    // Look up university slug for the URL
-    const { data: deptUni } = await supabase.from('universities').select('domain').eq('id', (department as { university_id: string }).university_id).single()
-    const deptSchool = deptUni ? (deptUni as { domain: string }).domain.split('.')[0] : 'umich'
-    postUrl = `/${deptSchool}/boards/${(department as { slug: string }).slug}`
+    postUrl = `/${schoolSlug}/boards/${(department as { slug: string }).slug}`
   }
 
   const { data, error } = await supabaseAny
