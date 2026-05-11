@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { Lock, MessageSquareText, Mail } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
-import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
+import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { getUniversityBySlug } from '@/lib/school'
 import { FlagButton } from '@/components/FlagButton'
@@ -56,26 +56,25 @@ export default async function BoardPostPage({
     .order('created_at', { ascending: true })
   const comments = (commentsData ?? []) as Comment[]
 
-  const emailMap = await getAuthEmailMap([post.author_id, ...comments.map(c => c.author_id)])
-
-  const { count: postUpvotes } = await supabase
-    .from('post_votes')
-    .select('*', { count: 'exact', head: true })
-    .eq('post_id', post.id)
+  const allAuthorIds = [post.author_id, ...comments.map(c => c.author_id)]
+  const [emailMap, handleMap, { count: postUpvotes }, commentVoteCounts] = await Promise.all([
+    getAuthEmailMap(allAuthorIds),
+    getHandleMap(allAuthorIds),
+    supabase.from('post_votes').select('*', { count: 'exact', head: true }).eq('post_id', post.id),
+    Promise.all(comments.map(c =>
+      supabase.from('comment_votes').select('*', { count: 'exact', head: true }).eq('comment_id', c.id)
+    )),
+  ])
 
   const postWithHandle: PostWithHandle = {
     ...post,
-    authorLabel: post.is_anonymous ? getAnonymousHandle(post.author_id, post.id) : toPublicHandle(emailMap.get(post.author_id)),
+    authorLabel: post.is_anonymous ? getAnonymousHandle(post.author_id, post.id) : getAuthorLabel(post.author_id, handleMap, emailMap),
     upvoteCount: postUpvotes ?? 0,
   }
 
-  const commentVoteCounts = await Promise.all(comments.map(c =>
-    supabase.from('comment_votes').select('*', { count: 'exact', head: true }).eq('comment_id', c.id)
-  ))
-
   const commentsWithHandles: CommentWithHandle[] = comments.map((comment, i) => ({
     ...comment,
-    authorLabel: comment.is_anonymous ? getAnonymousHandle(comment.author_id, post.id) : toPublicHandle(emailMap.get(comment.author_id)),
+    authorLabel: comment.is_anonymous ? getAnonymousHandle(comment.author_id, post.id) : getAuthorLabel(comment.author_id, handleMap, emailMap),
     upvoteCount: commentVoteCounts[i].count ?? 0,
   }))
 

@@ -40,6 +40,7 @@ export interface Database {
           degree_type: DegreeType | null
           role: UserRole
           is_banned: boolean
+          handle: string | null
           created_at: string
         }
         Insert: Omit<users['Row'], 'created_at'>

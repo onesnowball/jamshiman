@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getActionClient } from '@/lib/server-auth'
-import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
+import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 
 const PostSchema = z.object({
   dept_id: z.string().uuid().optional(),
@@ -77,7 +77,11 @@ export async function GET(req: NextRequest) {
     created_at: string
   }>
 
-  const emailMap = await getAuthEmailMap(posts.map(post => post.author_id))
+  const authorIds = posts.map(post => post.author_id)
+  const [emailMap, handleMap] = await Promise.all([
+    getAuthEmailMap(authorIds),
+    getHandleMap(authorIds),
+  ])
 
   const formattedPosts = await Promise.all(posts.map(async post => {
     const { count } = await supabase
@@ -89,7 +93,7 @@ export async function GET(req: NextRequest) {
     return {
       ...post,
       comment_count: count ?? 0,
-      author_label: post.is_anonymous ? 'Anonymous' : toPublicHandle(emailMap.get(post.author_id)),
+      author_label: post.is_anonymous ? 'Anonymous' : getAuthorLabel(post.author_id, handleMap, emailMap),
     }
   }))
 

@@ -75,7 +75,7 @@ export default function Home() {
                 style={{ background: 'rgba(63,114,255,0.25)', border: '1px solid rgba(63,114,255,0.5)' }}
               >
                 <div className="text-3xl mb-2">{school.emoji}</div>
-                <div className="text-sm font-bold text-white">{school.short}</div>
+                <div className="text-xs sm:text-sm font-bold text-white leading-tight break-words">{school.short}</div>
                 <div className="text-[10px] text-brand-300 mt-0.5 font-medium">Live ✓</div>
                 <ArrowRight className="absolute top-3 right-3 w-3 h-3 text-brand-300 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -86,7 +86,7 @@ export default function Home() {
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
               >
                 <div className="text-3xl mb-2 opacity-40">{school.emoji}</div>
-                <div className="text-sm font-semibold text-white opacity-30">{school.short}</div>
+                <div className="text-xs sm:text-sm font-semibold text-white opacity-30 leading-tight break-words">{school.short}</div>
                 <div className="text-[10px] text-gray-500 mt-0.5">Soon</div>
               </div>
             )

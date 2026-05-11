@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { Lock, MessageSquare } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
-import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
+import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 import { getUniversityBySlug } from '@/lib/school'
 import { BoardPostForm } from '@/components/forms/BoardPostForm'
 import type { Department, Post } from '@/types/database'
@@ -37,7 +37,11 @@ export default async function DepartmentBoardPage({
     .order('created_at', { ascending: false })
   const posts = (postsData ?? []) as Post[]
 
-  const emailMap = await getAuthEmailMap(posts.map(post => post.author_id))
+  const authorIds = posts.map(post => post.author_id)
+  const [emailMap, handleMap] = await Promise.all([
+    getAuthEmailMap(authorIds),
+    getHandleMap(authorIds),
+  ])
 
   const postCards = await Promise.all(posts.map(async post => {
     const { count } = await supabase
@@ -48,7 +52,7 @@ export default async function DepartmentBoardPage({
     return {
       ...post,
       commentCount: count ?? 0,
-      authorLabel: post.is_anonymous ? 'Anonymous' : toPublicHandle(emailMap.get(post.author_id)),
+      authorLabel: post.is_anonymous ? 'Anonymous' : getAuthorLabel(post.author_id, handleMap, emailMap),
     }
   }))
 

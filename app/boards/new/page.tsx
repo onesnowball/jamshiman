@@ -10,7 +10,13 @@ export default async function NewPostPage() {
   if (!viewer) redirect('/auth/login')
 
   const supabase = createAdminClient()
-  const { data } = await supabase.from('departments').select('*').eq('active', true).order('name')
+  // Scope to viewer's university so departments from other schools never appear
+  const { data } = await supabase
+    .from('departments')
+    .select('*')
+    .eq('active', true)
+    .eq('university_id', viewer.university_id)
+    .order('name')
   const raw = (data ?? []) as Department[]
 
   // General boards first, then academic departments

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { NewPostForm } from '@/components/boards/NewPostForm'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
-import { getUniversityBySlug } from '@/lib/school'
+import { getUniversityBySlug, domainToSlug } from '@/lib/school'
 import type { Department } from '@/types/database'
 
 export default async function NewPostPage({ params }: { params: { school: string } }) {
@@ -11,6 +11,18 @@ export default async function NewPostPage({ params }: { params: { school: string
 
   const university = await getUniversityBySlug(params.school)
   if (!university) redirect('/')
+
+  // Prevent cross-school posting — bounce the user to their own school's new post page
+  if (viewer.university_id !== university.id) {
+    const supabaseAdmin = createAdminClient()
+    const { data: viewerUni } = await supabaseAdmin
+      .from('universities')
+      .select('domain')
+      .eq('id', viewer.university_id)
+      .single()
+    const viewerSlug = viewerUni ? domainToSlug((viewerUni as { domain: string }).domain) : params.school
+    redirect(`/${viewerSlug}/boards/new`)
+  }
 
   const supabase = createAdminClient()
   const { data } = await supabase

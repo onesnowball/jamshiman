@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { ProfileActivity } from '@/components/profile/ProfileActivity'
+import { HandleEditor } from '@/components/profile/HandleEditor'
 import type { AdvisorReview, CourseReview, Post, Comment, Schedule } from '@/types/database'
 
 type ProfileAdvisorReview = AdvisorReview & {
@@ -106,17 +107,24 @@ export default async function ProfilePage() {
       <main className="max-w-5xl mx-auto px-4 py-8 page-enter space-y-6">
         <section className="card p-6">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-700 font-semibold">
-              {viewer.email?.slice(0, 2).toUpperCase() ?? 'UM'}
+            <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-700 font-semibold text-lg">
+              {viewer.handle ? viewer.handle.slice(0, 2).toUpperCase() : (viewer.email?.slice(0, 2).toUpperCase() ?? '??')}
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-semibold text-gray-900">Your profile</h1>
               <p className="text-sm text-gray-500 mt-1">
                 Verified via {viewer.email}. This page stays private to you.
               </p>
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <span className="badge-blue">{viewer.role === 'admin' ? 'Admin' : 'Student'}</span>
                 {viewer.degree_type && <span className="badge-gray">{viewer.degree_type.toUpperCase()}</span>}
+              </div>
+              <div className="mt-4">
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Display name</p>
+                <HandleEditor currentHandle={viewer.handle ?? null} />
+                <p className="text-xs text-gray-400 mt-1.5">
+                  Shown when you post without anonymity. Can be changed anytime.
+                </p>
               </div>
             </div>
           </div>

@@ -57,5 +57,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'profile_failed', detail: profileError.message }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true })
+  // Check if the user still needs to choose a handle (new users or existing users who skipped)
+  const { data: profile } = await adminSupabase
+    .from('users')
+    .select('handle')
+    .eq('id', user.id)
+    .single()
+
+  const needsHandle = !(profile as { handle: string | null } | null)?.handle
+
+  return NextResponse.json({ ok: true, needsHandle })
 }

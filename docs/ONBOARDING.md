@@ -53,6 +53,7 @@ In the Supabase dashboard → SQL Editor, run each file in `supabase/migrations/
 011_rename_uiuc.sql
 012_advisor_review_lab_member.sql
 013_suspension_workflow.sql
+014_user_handles.sql
 ```
 
 Each file is additive — just paste and run. If a later migration fails, check that earlier ones ran successfully first.

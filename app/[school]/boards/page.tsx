@@ -4,7 +4,7 @@ import { BoardFeed } from '@/components/boards/BoardFeed'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
-import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
+import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 import { getUniversityBySlug } from '@/lib/school'
 import type { Department, Post } from '@/types/database'
 
@@ -65,7 +65,11 @@ export default async function BoardsPage({
   const { data: postsData } = await query
   const posts = (postsData ?? []) as Post[]
 
-  const emailMap = await getAuthEmailMap(posts.map(p => p.author_id))
+  const authorIds = posts.map(p => p.author_id)
+  const [emailMap, handleMap] = await Promise.all([
+    getAuthEmailMap(authorIds),
+    getHandleMap(authorIds),
+  ])
 
   const feed: FeedPost[] = await Promise.all(posts.map(async post => {
     const [{ count: commentCount }, { count: upvoteCount }] = await Promise.all([
@@ -77,7 +81,7 @@ export default async function BoardsPage({
       ...post,
       commentCount: commentCount ?? 0,
       upvoteCount: upvoteCount ?? 0,
-      authorLabel: post.is_anonymous ? getAnonymousHandle(post.author_id, post.id) : toPublicHandle(emailMap.get(post.author_id)),
+      authorLabel: post.is_anonymous ? getAnonymousHandle(post.author_id, post.id) : getAuthorLabel(post.author_id, handleMap, emailMap),
       deptName: dept?.name ?? '',
     }
   }))
