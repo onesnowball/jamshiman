@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, FlaskConical, Users } from 'lucide-react'
+import { Search, FlaskConical, Users, ArrowRight } from 'lucide-react'
 import { RatingDisplay } from '@/components/ui/StarRating'
 
 type AdvisorItem = {
@@ -15,8 +15,21 @@ type AdvisorItem = {
   advisor_aggregates: {
     review_count: number
     avg_overall: number
+    avg_mentorship?: number
+    avg_funding?: number
+    avg_worklife?: number
+    avg_communication?: number
+    avg_career?: number
   } | null
 }
+
+const DIMENSION_LABELS: { key: string; label: string }[] = [
+  { key: 'avg_mentorship',    label: 'Mentorship' },
+  { key: 'avg_funding',       label: 'Funding' },
+  { key: 'avg_worklife',      label: 'Work-life' },
+  { key: 'avg_communication', label: 'Communication' },
+  { key: 'avg_career',        label: 'Career' },
+]
 
 export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; school?: string }) {
   const [query, setQuery] = useState('')
@@ -54,16 +67,18 @@ export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; s
         <div className="card p-10 text-center text-gray-400">
           <Users className="w-8 h-8 mx-auto mb-3 opacity-40" />
           <p className="text-sm font-medium text-gray-700">No advisors found.</p>
+          <p className="text-xs mt-1">Try a different name or research area.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {filtered.map(advisor => {
             const stats = advisor.advisor_aggregates
             const hasReviews = (stats?.review_count ?? 0) >= 1
+            const href = school ? `/${school}/advisors/${advisor.id}` : `/advisors/${advisor.id}`
             return (
               <Link
                 key={advisor.id}
-                href={school ? `/${school}/advisors/${advisor.id}` : `/advisors/${advisor.id}`}
+                href={href}
                 className="card p-4 flex items-start gap-4 hover:border-brand-200 hover:shadow-md transition-all group"
               >
                 <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-semibold text-sm flex-shrink-0 group-hover:bg-brand-100 transition-colors">
@@ -81,12 +96,13 @@ export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; s
                         {advisor.title ? ` · ${advisor.title}` : ''}
                       </p>
                     </div>
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 flex items-center gap-2">
                       {hasReviews ? (
                         <RatingDisplay value={parseFloat(String(stats!.avg_overall))} count={stats!.review_count} />
                       ) : (
-                        <span className="text-xs text-gray-400">No reviews yet</span>
+                        <span className="text-xs text-brand-600 font-medium">Be the first to review</span>
                       )}
+                      <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-brand-500 transition-colors flex-shrink-0" />
                     </div>
                   </div>
 
@@ -95,6 +111,24 @@ export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; s
                       <FlaskConical className="w-3 h-3 text-gray-400" />
                       <span className="text-xs text-gray-400">{advisor.lab_name}</span>
                     </div>
+                  )}
+
+                  {hasReviews && stats && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+                      {DIMENSION_LABELS.map(({ key, label }) => {
+                        const val = (stats as any)[key] as number | undefined
+                        if (!val) return null
+                        return (
+                          <span key={key} className="text-[10px] text-gray-500">
+                            {label} <span className="font-semibold text-gray-700">{val.toFixed(1)}</span>
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {!hasReviews && (
+                    <p className="text-xs text-gray-400 mt-1.5">Help future students understand this lab.</p>
                   )}
 
                   {advisor.research_areas?.length > 0 && (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, CheckCircle, Loader2, ShieldCheck } from 'lucide-react'
 import { StarRating } from '@/components/ui/StarRating'
 import type { Course, CourseRatings } from '@/types/database'
 
@@ -79,6 +79,12 @@ export function CourseReviewForm({
         <h3 className="font-medium text-gray-900">{course.code}</h3>
         <p className="text-sm text-gray-500">{course.name}</p>
         <p className="text-xs text-gray-400 mt-1">{course.dept_name}</p>
+      </div>
+
+      {/* Privacy notice */}
+      <div className="flex items-start gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2.5">
+        <ShieldCheck className="w-3.5 h-3.5 text-gray-400 shrink-0 mt-0.5" />
+        Your identity is not shown publicly. Avoid details that could identify you or others.
       </div>
 
       <div className="space-y-1.5">

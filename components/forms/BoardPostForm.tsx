@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertCircle, Loader2, Send } from 'lucide-react'
+import { AlertCircle, Loader2, Send, ShieldCheck } from 'lucide-react'
 
 export function BoardPostForm({ deptId }: { deptId: string }) {
   const [title, setTitle] = useState('')
@@ -92,6 +92,11 @@ export function BoardPostForm({ deptId }: { deptId: string }) {
         {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         Publish thread
       </button>
+
+      <div className="flex items-center gap-1.5 text-xs text-gray-400">
+        <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+        Be honest, but be useful. Personal attacks, harassment, and spam may be removed.
+      </div>
     </div>
   )
 }

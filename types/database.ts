@@ -256,11 +256,12 @@ export type Flag = flags['Row']
 export type AuditLog = audit_log['Row']
 
 export interface AdvisorRatings {
-  mentorship: number      // 1-5
-  funding: number         // 1-5
-  worklife: number        // 1-5
-  communication: number   // 1-5
-  career: number          // 1-5
+  mentorship: number       // 1-5
+  funding: number          // 1-5
+  worklife: number         // 1-5
+  communication: number    // 1-5
+  career: number           // 1-5
+  lab_atmosphere?: number  // 1-5 (added later — optional for back-compat)
 }
 
 export interface CourseRatings {

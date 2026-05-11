@@ -2,16 +2,15 @@ import { notFound } from 'next/navigation'
 import { CourseSearch } from '@/components/courses/CourseSearch'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getUniversityBySlug } from '@/lib/school'
-import type { Course } from '@/types/database'
+import type { Course, CourseRatings } from '@/types/database'
 
-// Always fetch fresh — no cookies() call here so Next.js would otherwise
-// cache the Supabase query and serve stale results after new courses are added.
 export const dynamic = 'force-dynamic'
 
 type CourseListItem = Course & {
   departments: { name: string | null } | null
   reviewCount: number
   discussionCount: number
+  avgRatings: CourseRatings | null
 }
 
 export default async function CoursesPage({ params }: { params: { school: string } }) {
@@ -20,7 +19,7 @@ export default async function CoursesPage({ params }: { params: { school: string
 
   const supabase = createAdminClient()
 
-  const [{ data: coursesData }, { data: deptData }] = await Promise.all([
+  const [{ data: coursesData }, { data: deptData }, { data: allReviewsData }, { data: allPostsData }] = await Promise.all([
     (supabase as any)
       .from('courses')
       .select('*')
@@ -30,6 +29,18 @@ export default async function CoursesPage({ params }: { params: { school: string
     supabase
       .from('departments')
       .select('id, name')
+      .eq('university_id', university.id),
+    // Batch fetch all course reviews in one query instead of N queries
+    supabase
+      .from('course_reviews')
+      .select('course_id, ratings')
+      .eq('status', 'active'),
+    // Batch fetch all discussion post counts
+    supabase
+      .from('posts')
+      .select('course_id')
+      .eq('board_type', 'course')
+      .eq('status', 'active')
       .eq('university_id', university.id),
   ])
 
@@ -42,13 +53,43 @@ export default async function CoursesPage({ params }: { params: { school: string
     departments: { name: deptMap.get(c.dept_id) ?? null },
   })) as (Course & { departments: { name: string | null } | null })[]
 
-  const courseItems: CourseListItem[] = await Promise.all(courses.map(async course => {
-    const [{ count: reviewCount }, { count: discussionCount }] = await Promise.all([
-      supabase.from('course_reviews').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('status', 'active'),
-      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('board_type', 'course').eq('status', 'active'),
-    ])
-    return { ...course, reviewCount: reviewCount ?? 0, discussionCount: discussionCount ?? 0 }
-  }))
+  // Compute review stats per course from batch result
+  const reviewStatsMap = new Map<string, { count: number; totals: CourseRatings }>()
+  for (const r of (allReviewsData ?? []) as { course_id: string; ratings: CourseRatings }[]) {
+    const entry = reviewStatsMap.get(r.course_id) ?? {
+      count: 0,
+      totals: { difficulty: 0, usefulness: 0, workload: 0, professor: 0 },
+    }
+    entry.count++
+    entry.totals.difficulty   += r.ratings.difficulty
+    entry.totals.usefulness   += r.ratings.usefulness
+    entry.totals.workload     += r.ratings.workload
+    entry.totals.professor    += r.ratings.professor
+    reviewStatsMap.set(r.course_id, entry)
+  }
+
+  // Compute discussion counts per course from batch result
+  const discussionCountMap = new Map<string, number>()
+  for (const p of (allPostsData ?? []) as { course_id: string | null }[]) {
+    if (!p.course_id) continue
+    discussionCountMap.set(p.course_id, (discussionCountMap.get(p.course_id) ?? 0) + 1)
+  }
+
+  const courseItems: CourseListItem[] = courses.map(course => {
+    const stats = reviewStatsMap.get(course.id)
+    const avgRatings = stats && stats.count > 0 ? {
+      difficulty:  stats.totals.difficulty  / stats.count,
+      usefulness:  stats.totals.usefulness  / stats.count,
+      workload:    stats.totals.workload    / stats.count,
+      professor:   stats.totals.professor   / stats.count,
+    } : null
+    return {
+      ...course,
+      reviewCount:      stats?.count ?? 0,
+      discussionCount:  discussionCountMap.get(course.id) ?? 0,
+      avgRatings,
+    }
+  })
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8 page-enter space-y-2">

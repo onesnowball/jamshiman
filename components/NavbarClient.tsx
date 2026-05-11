@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus, UserCircle, Shield, Mail, ChevronDown } from 'lucide-react'
+import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus, UserCircle, Shield, Mail, ChevronDown, Layers } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState, useRef, useEffect } from 'react'
 
@@ -34,17 +34,18 @@ export function NavbarClient({
   }, [])
 
   const navItems = s ? [
-    { href: `/${s}/boards`,   label: 'Boards',   icon: MessageSquare },
-    { href: '/messages',      label: 'Messages', icon: Mail },
-    { href: `/${s}/advisors`, label: 'Advisors', icon: Search },
-    { href: `/${s}/courses`,  label: 'Courses',  icon: BookOpen },
-    { href: `/${s}/schedule`, label: 'Schedule', icon: Calendar },
+    { href: `/${s}/advisors`,    label: 'Advisors',    icon: Search },
+    { href: `/${s}/departments`, label: 'Departments', icon: Layers },
+    { href: `/${s}/courses`,     label: 'Courses',     icon: BookOpen },
+    { href: `/${s}/boards`,      label: 'Boards',      icon: MessageSquare },
+    { href: '/messages',         label: 'Messages',    icon: Mail },
+    { href: `/${s}/schedule`,    label: 'Schedule',    icon: Calendar },
   ] : [
     { href: '/messages', label: 'Messages', icon: Mail },
     { href: '/profile',  label: 'Profile',  icon: UserCircle },
   ]
 
-  const homeHref = s ? `/${s}/boards` : '/'
+  const homeHref = s ? `/${s}` : '/'
   const currentSchool = schools.find(sc => sc.slug === s)
 
   function shortName(name: string) {

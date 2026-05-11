@@ -7,13 +7,21 @@ import { FlaskConical, Clock, GraduationCap, Plus } from 'lucide-react'
 import { FlagButton } from '@/components/FlagButton'
 import type { Advisor, AdvisorRatings, AdvisorReview, Database } from '@/types/database'
 
-const RATING_LABELS: Record<keyof AdvisorRatings, string> = {
-  mentorship: 'Mentorship',
-  funding: 'Funding',
-  worklife: 'Work-life',
-  communication: 'Communication',
-  career: 'Career support',
-}
+const AGGREGATE_KEYS: { key: string; label: string }[] = [
+  { key: 'avg_mentorship',    label: 'Mentorship' },
+  { key: 'avg_funding',       label: 'Funding' },
+  { key: 'avg_worklife',      label: 'Work-life' },
+  { key: 'avg_communication', label: 'Communication' },
+  { key: 'avg_career',        label: 'Career support' },
+]
+
+const RATING_DISPLAY_KEYS: { key: keyof AdvisorRatings; label: string }[] = [
+  { key: 'mentorship',    label: 'Mentorship' },
+  { key: 'funding',       label: 'Funding' },
+  { key: 'worklife',      label: 'Work-life' },
+  { key: 'communication', label: 'Communication' },
+  { key: 'career',        label: 'Career' },
+]
 
 type AdvisorPageAdvisor = Advisor & {
   departments: { name: string } | null
@@ -93,18 +101,15 @@ export default async function AdvisorPage({ params }: { params: { id: string } }
                 <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
                   <RatingDisplay value={stats.avg_overall} count={stats.review_count} />
                   <div className="space-y-1.5 mt-3">
-                    {(Object.keys(RATING_LABELS) as (keyof AdvisorRatings)[]).map(key => (
+                    {AGGREGATE_KEYS.map(({ key, label }) => (
                       <div key={key} className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">{RATING_LABELS[key]}</span>
+                        <span className="text-xs text-gray-500">{label}</span>
                         <div className="flex items-center gap-2">
                           <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-amber-400 rounded-full"
-                              style={{ width: `${((stats[`avg_${key}`] as number) / 5) * 100}%` }}
-                            />
+                            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${((stats[key as keyof AdvisorAggregate] as number) / 5) * 100}%` }} />
                           </div>
                           <span className="text-xs font-medium text-gray-600 w-6 text-right">
-                            {(stats[`avg_${key}`] as number).toFixed(1)}
+                            {(stats[key as keyof AdvisorAggregate] as number).toFixed(1)}
                           </span>
                         </div>
                       </div>
@@ -165,10 +170,10 @@ export default async function AdvisorPage({ params }: { params: { id: string } }
                 </div>
 
                 <div className="grid grid-cols-5 gap-2">
-                  {(Object.keys(RATING_LABELS) as (keyof AdvisorRatings)[]).map(key => (
+                  {RATING_DISPLAY_KEYS.map(({ key, label }) => (
                     <div key={key} className="text-center">
-                      <div className="text-xs text-gray-400 mb-1">{RATING_LABELS[key].split(' ')[0]}</div>
-                      <StarRating value={review.ratings[key]} readonly size="sm" />
+                      <div className="text-xs text-gray-400 mb-1">{label.split(' ')[0]}</div>
+                      <StarRating value={review.ratings[key] ?? 0} readonly size="sm" />
                     </div>
                   ))}
                 </div>

@@ -90,8 +90,8 @@ export default async function BoardsPage({
   return (
     <main className="max-w-2xl mx-auto px-4 py-6 page-enter space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">Community</h1>
-        <p className="text-xs text-gray-400 mt-0.5">Anonymous threads · {university.name}</p>
+        <h1 className="text-xl font-semibold text-gray-900">Ask your school anonymously</h1>
+        <p className="text-xs text-gray-400 mt-0.5 max-w-sm">Labs, advisors, funding, courses, housing, and department life — discussed by verified {university.name} students.</p>
       </div>
 
       {/* Department filter chips */}
@@ -119,19 +119,30 @@ export default async function BoardsPage({
         ))}
       </div>
 
-      {/* New post CTA for empty state */}
-      {!feed.length && viewer && (
-        <Link href={`/${params.school}/boards/new`} className="btn-primary text-sm inline-flex">
-          <Plus className="w-4 h-4" /> Start the first thread
-        </Link>
+      {/* Empty state */}
+      {!feed.length && (
+        <div className="card p-10 text-center text-gray-400 space-y-2">
+          <p className="text-sm font-medium text-gray-700">No posts yet.</p>
+          <p className="text-xs">Start a useful conversation for your campus.</p>
+          {viewer && (
+            <Link href={`/${params.school}/boards/new`} className="btn-primary text-sm inline-flex mt-3">
+              <Plus className="w-4 h-4" /> Start the first thread
+            </Link>
+          )}
+        </div>
       )}
 
-      {/* Feed with search */}
+      {/* Feed */}
       <BoardFeed
         feed={feed}
         school={params.school}
         deptSlugMap={Object.fromEntries(Array.from(deptMap.entries()).map(([id, d]) => [id, d.slug]))}
       />
+
+      {/* Safety copy */}
+      <p className="text-xs text-gray-400 text-center pt-2">
+        Be honest, but be useful. Personal attacks, doxxing, harassment, and spam may be removed. Verified students only · Moderated for safety.
+      </p>
     </main>
   )
 }
