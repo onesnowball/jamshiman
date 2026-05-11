@@ -18,13 +18,7 @@ export function CourseReviewForm({
   course: Course & { dept_name?: string }
 }) {
   const [step, setStep] = useState<'form' | 'done'>('form')
-  const [semester, setSemester] = useState('Fall 2026')
-
-  const SEMESTER_OPTIONS = (() => {
-    const terms = ['Fall', 'Spring-Summer', 'Winter']
-    const years = [2026, 2025, 2024, 2023, 2022, 2021]
-    return terms.flatMap(term => years.map(year => `${term} ${year}`))
-  })()
+  const [semester, setSemester] = useState('')
   const [ratings, setRatings] = useState<CourseRatings>({
     difficulty: 0,
     usefulness: 0,
@@ -89,15 +83,13 @@ export function CourseReviewForm({
 
       <div className="space-y-1.5">
         <label className="section-label">Semester taken</label>
-        <select
+        <input
+          type="text"
           value={semester}
           onChange={event => setSemester(event.target.value)}
+          placeholder="e.g. Fall 2025"
           className="input"
-        >
-          {SEMESTER_OPTIONS.map(s => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+        />
       </div>
 
       <div className="space-y-3">
