@@ -7,14 +7,14 @@ import { GraduationCap, Search, ArrowRight } from 'lucide-react'
 const SCHOOLS = [
   { name: 'University of Michigan',  short: 'UMich',       emoji: '〽️',  href: '/auth/login?school=umich.edu',         live: true  },
   { name: 'Northwestern University', short: 'Northwestern', emoji: '🐾',  href: '/auth/login?school=northwestern.edu',  live: true  },
-  { name: 'MIT',                     short: 'MIT',          emoji: '🦫',  href: null,          live: false },
+  { name: 'UIUC',                    short: 'UIUC',         emoji: '🌽',  href: '/auth/login?school=illinois.edu',      live: true  },
   { name: 'Stanford University',     short: 'Stanford',     emoji: '🌲',  href: null,          live: false },
   { name: 'Carnegie Mellon',         short: 'CMU',          emoji: '🎓',  href: null,          live: false },
   { name: 'UC Berkeley',             short: 'Berkeley',     emoji: '🐻',  href: null,          live: false },
   { name: 'Georgia Tech',            short: 'GT',           emoji: '🐝',  href: null,          live: false },
   { name: 'Purdue University',       short: 'Purdue',       emoji: '🚂',  href: null,          live: false },
   { name: 'Caltech',                 short: 'Caltech',      emoji: '🔭',  href: null,          live: false },
-  { name: 'UIUC',                     short: 'UIUC',         emoji: '🌽',  href: '/auth/login?school=illinois.edu', live: true  },
+  { name: 'MIT',                     short: 'MIT',          emoji: '🦫',  href: null,          live: false },
   { name: 'Cornell University',      short: 'Cornell',      emoji: '🐻',  href: null,          live: false },
   { name: 'UT Austin',               short: 'UT Austin',    emoji: '🤘',  href: null,          live: false },
 ]
