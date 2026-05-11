@@ -1,8 +1,9 @@
+import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import Link from 'next/link'
-import { Flag, Users, UserCog, Shield, BookOpen, Layers } from 'lucide-react'
+import { Flag, Users, UserCog, Shield, BookOpen, Layers, AlertCircle } from 'lucide-react'
 import { getAdminViewer } from '@/lib/server-auth'
 
 export default async function AdminPage() {
@@ -12,37 +13,69 @@ export default async function AdminPage() {
   const supabaseAny = supabase as any
 
   const isGlobalAdmin = viewer.role === 'admin'
-  const uniIds = isGlobalAdmin ? null : viewer.campusAdminUniversityIds
 
-  // Scope each stat to the admin's universities when campus admin
-  let flagQuery = supabase.from('flags').select('*', { count: 'exact', head: true }).eq('status', 'pending')
-  let userQuery = supabase.from('users').select('*', { count: 'exact', head: true })
-  let advisorQuery = supabase.from('advisors').select('*', { count: 'exact', head: true }).eq('active', true)
-  let courseQuery = supabaseAny.from('courses').select('*', { count: 'exact', head: true })
+  // ── Resolve which university this admin is currently managing ─────────────
+  // School context is the primary divider — stats are ALWAYS scoped to one school.
+  let targetUniversityId: string | null = null
+  let targetUniversityName: string | null = null
 
-  if (uniIds) {
-    userQuery = (userQuery as any).in('university_id', uniIds)
-    advisorQuery = (advisorQuery as any).in('university_id', uniIds)
-    courseQuery = courseQuery.in('university_id', uniIds)
-
-    // For flags: scope to content that belongs to this university's posts/comments
-    // (simplest proxy: count flags on posts from this university + its comments)
-    // We don't have a direct university_id on flags, so we fall back to unscoped flag count
-    // for campus admins — still actionable, just not filtered yet.
+  if (isGlobalAdmin) {
+    const lastSchool = cookies().get('last_school')?.value
+    if (lastSchool) {
+      const { data } = await supabase
+        .from('universities')
+        .select('id, name')
+        .eq('domain', `${lastSchool}.edu`)
+        .single()
+      if (data) {
+        targetUniversityId = (data as { id: string; name: string }).id
+        targetUniversityName = (data as { id: string; name: string }).name
+      }
+    }
+  } else {
+    targetUniversityId = viewer.campusAdminUniversityIds[0] ?? null
+    if (targetUniversityId) {
+      const { data } = await supabase
+        .from('universities')
+        .select('name')
+        .eq('id', targetUniversityId)
+        .single()
+      targetUniversityName = (data as { name: string } | null)?.name ?? null
+    }
   }
 
-  const [{ count: flagCount }, { count: userCount }, { count: advisorCount }, { count: courseCount }] = await Promise.all([
-    flagQuery,
-    userQuery,
-    advisorQuery,
-    courseQuery,
-  ])
+  // ── Stats — all scoped to the target university ───────────────────────────
+  let flagCount = 0, userCount = 0, advisorCount = 0, courseCount = 0
+
+  if (targetUniversityId) {
+    const uid = targetUniversityId
+
+    // Get post IDs for this university to count scoped flags
+    const { data: uniPosts } = await supabase.from('posts').select('id').eq('university_id', uid)
+    const postIds = (uniPosts ?? []).map((p: { id: string }) => p.id)
+
+    const [flagRes, userRes, advisorRes, courseRes] = await Promise.all([
+      postIds.length
+        ? supabase.from('flags').select('*', { count: 'exact', head: true })
+            .eq('status', 'pending')
+            .in('content_id', postIds)
+        : Promise.resolve({ count: 0 }),
+      supabase.from('users').select('*', { count: 'exact', head: true }).eq('university_id', uid),
+      supabase.from('advisors').select('*', { count: 'exact', head: true }).eq('university_id', uid).eq('active', true),
+      supabaseAny.from('courses').select('*', { count: 'exact', head: true }).eq('university_id', uid),
+    ])
+
+    flagCount = flagRes.count ?? 0
+    userCount = userRes.count ?? 0
+    advisorCount = advisorRes.count ?? 0
+    courseCount = courseRes.count ?? 0
+  }
 
   const stats = [
-    { label: 'Pending flags',   value: flagCount ?? 0,    icon: Flag,     href: '/admin/flags',    urgent: (flagCount ?? 0) > 0 },
-    { label: 'Signed-in users', value: userCount ?? 0,    icon: Users,    href: null,              urgent: false },
-    { label: 'Active advisors', value: advisorCount ?? 0, icon: UserCog,  href: '/admin/advisors', urgent: false },
-    { label: 'Courses',         value: courseCount ?? 0,  icon: BookOpen, href: '/admin/courses',  urgent: (courseCount ?? 0) === 0 },
+    { label: 'Pending flags',   value: flagCount,   icon: Flag,     href: '/admin/flags',    urgent: flagCount > 0 },
+    { label: 'Signed-in users', value: userCount,   icon: Users,    href: null,              urgent: false },
+    { label: 'Active advisors', value: advisorCount, icon: UserCog, href: '/admin/advisors', urgent: false },
+    { label: 'Courses',         value: courseCount,  icon: BookOpen, href: '/admin/courses',  urgent: courseCount === 0 },
   ]
 
   const navLinks = [
@@ -50,22 +83,44 @@ export default async function AdminPage() {
     { href: '/admin/departments', icon: Layers,   label: 'Manage departments',      desc: 'Create board categories and academic departments' },
     { href: '/admin/courses',     icon: BookOpen, label: 'Manage courses',          desc: 'Add, edit, and seed the course catalog' },
     { href: '/admin/advisors',    icon: UserCog,  label: 'Manage advisors',         desc: 'Create, edit, and deactivate advisor listings' },
-    // Only global admin can manage who has admin access
-    ...(isGlobalAdmin ? [{ href: '/admin/access', icon: Users, label: 'Manage admin access', desc: 'Promote users and assign campus admins' }] : []),
+    ...(isGlobalAdmin
+      ? [{ href: '/admin/access', icon: Users, label: 'Manage admin access', desc: 'Promote users and assign campus admins' }]
+      : []),
   ]
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8">
+
+        {/* ── School header — primary context ── */}
         <div className="flex items-center gap-3 mb-8">
-          <Shield className="w-5 h-5 text-red-500" />
-          <h1 className="text-xl font-semibold text-gray-900">Admin dashboard</h1>
-          {!isGlobalAdmin && (
-            <span className="badge-blue">Campus admin</span>
-          )}
+          <Shield className="w-5 h-5 text-red-500 flex-shrink-0" />
+          <div>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Admin dashboard</p>
+            {targetUniversityName ? (
+              <h1 className="text-xl font-semibold text-gray-900">{targetUniversityName}</h1>
+            ) : (
+              <h1 className="text-xl font-semibold text-gray-400 italic">No school selected</h1>
+            )}
+          </div>
+          {!isGlobalAdmin && <span className="badge-blue ml-auto">Campus admin</span>}
         </div>
 
+        {/* ── Warning if no school context ── */}
+        {!targetUniversityId && (
+          <div className="card p-5 mb-6 flex items-start gap-3 border-amber-200 bg-amber-50">
+            <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">No school selected</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Navigate to a school first (e.g. /umich/boards) then return here to see that school's stats.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Stats ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {stats.map(({ label, value, icon: Icon, href, urgent }) => {
             const card = (
@@ -73,7 +128,7 @@ export default async function AdminPage() {
                 <div>
                   <p className="section-label mb-1">{label}</p>
                   <p className={`text-3xl font-semibold ${urgent ? 'text-red-600' : 'text-gray-900'}`}>
-                    {value}
+                    {targetUniversityId ? value : '—'}
                   </p>
                 </div>
                 <Icon className={`w-5 h-5 mt-1 ${urgent ? 'text-red-400' : 'text-gray-300'}`} />
@@ -84,13 +139,12 @@ export default async function AdminPage() {
                 {card}
               </Link>
             ) : (
-              <div key={label} className="card p-5">
-                {card}
-              </div>
+              <div key={label} className="card p-5">{card}</div>
             )
           })}
         </div>
 
+        {/* ── Nav links ── */}
         <div className="card divide-y divide-gray-50">
           {navLinks.map(({ href, icon: Icon, label, desc }) => (
             <Link key={href} href={href} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors">
@@ -104,6 +158,7 @@ export default async function AdminPage() {
             </Link>
           ))}
         </div>
+
       </main>
     </div>
   )
