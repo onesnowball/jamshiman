@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Check, X, Loader2, ToggleLeft, ToggleRight, Pencil, GraduationCap, AlertTriangle } from 'lucide-react'
+import { Plus, Check, X, Loader2, ToggleLeft, ToggleRight, Pencil, GraduationCap, AlertTriangle, Trash2 } from 'lucide-react'
 import type { Department } from '@/types/database'
 
 type University = { id: string; name: string; domain: string }
@@ -15,6 +15,7 @@ export function AcademicDeptManager({ departments: initial, universities }: Prop
   const [depts, setDepts] = useState(initial)
   const [showCreate, setShowCreate] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [createForm, setCreateForm] = useState({ name: '', slug: '' })
@@ -70,6 +71,20 @@ export function AcademicDeptManager({ departments: initial, universities }: Prop
     if (!res.ok) { const d = await res.json(); setError(d.error || 'Failed.'); return }
     setDepts(prev => prev.map(d => d.id === id ? { ...d, name: editForm.name.trim(), slug: editForm.slug.trim() } : d))
     setEditingId(null)
+  }
+
+  async function deleteDept(id: string) {
+    setLoading(id + '-delete')
+    setError('')
+    const res = await fetch('/api/admin/departments', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    setLoading(null)
+    setConfirmDelete(null)
+    if (!res.ok) { const d = await res.json(); setError(d.error || 'Failed.'); return }
+    setDepts(prev => prev.filter(d => d.id !== id))
   }
 
   async function toggleActive(dept: typeof initial[0]) {
@@ -205,39 +220,76 @@ export function AcademicDeptManager({ departments: initial, universities }: Prop
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between px-4 py-3 gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900 truncate">{dept.name}</p>
-                      <span className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded shrink-0">
-                        {dept.slug}
-                      </span>
+                <div>
+                  <div className="flex items-center justify-between px-4 py-3 gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-gray-900 truncate">{dept.name}</p>
+                        <span className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                          {dept.slug}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => openEdit(dept)}
+                        className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border border-transparent text-gray-400 hover:text-brand-600 hover:bg-brand-50 hover:border-brand-200 transition-all"
+                        title="Edit name and slug"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => toggleActive(dept)}
+                        disabled={loading === dept.id + '-toggle'}
+                        className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-all ${
+                          dept.active
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
+                            : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+                        }`}
+                      >
+                        {loading === dept.id + '-toggle'
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : dept.active ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />
+                        }
+                        {dept.active ? 'Visible' : 'Hidden'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(dept.id)}
+                        disabled={!!loading}
+                        className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border border-transparent text-gray-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+                        title="Delete department"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => openEdit(dept)}
-                      className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border border-transparent text-gray-400 hover:text-brand-600 hover:bg-brand-50 hover:border-brand-200 transition-all"
-                      title="Edit name and slug"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => toggleActive(dept)}
-                      disabled={loading === dept.id + '-toggle'}
-                      className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-all ${
-                        dept.active
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
-                          : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
-                      }`}
-                    >
-                      {loading === dept.id + '-toggle'
-                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                        : dept.active ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />
-                      }
-                      {dept.active ? 'Visible' : 'Hidden'}
-                    </button>
-                  </div>
+
+                  {confirmDelete === dept.id && (
+                    <div className="mx-4 mb-3 p-3 rounded-lg bg-red-50 border border-red-100 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-medium text-red-800">Delete "{dept.name}"?</p>
+                          <p className="text-xs text-red-600 mt-0.5">
+                            Advisors and courses in this department won't be removed, but they'll lose their department association. This cannot be undone.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => deleteDept(dept.id)}
+                          disabled={loading === dept.id + '-delete'}
+                          className="btn-danger text-xs py-1 px-3"
+                        >
+                          {loading === dept.id + '-delete' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          Yes, delete
+                        </button>
+                        <button onClick={() => setConfirmDelete(null)} className="btn-secondary text-xs py-1 px-3">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
