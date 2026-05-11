@@ -14,7 +14,7 @@ const SCHOOLS = [
   { name: 'Georgia Tech',            short: 'GT',           emoji: '🐝',  href: null,          live: false },
   { name: 'Purdue University',       short: 'Purdue',       emoji: '🚂',  href: null,          live: false },
   { name: 'Caltech',                 short: 'Caltech',      emoji: '🔭',  href: null,          live: false },
-  { name: 'University of Illinois',  short: 'UIUC',         emoji: '🌽',  href: null,          live: false },
+  { name: 'UIUC',                     short: 'UIUC',         emoji: '🌽',  href: '/auth/login?school=illinois.edu', live: true  },
   { name: 'Cornell University',      short: 'Cornell',      emoji: '🐻',  href: null,          live: false },
   { name: 'UT Austin',               short: 'UT Austin',    emoji: '🤘',  href: null,          live: false },
 ]
