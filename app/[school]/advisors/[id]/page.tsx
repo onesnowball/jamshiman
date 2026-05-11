@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/Navbar'
+
+export const dynamic = 'force-dynamic'
 import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
 import { RatingDisplay, StarRating } from '@/components/ui/StarRating'
 import { FlaskConical, GraduationCap, Plus } from 'lucide-react'

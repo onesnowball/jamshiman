@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { createHash } from 'crypto'
-import { getAllowedSchoolDomains, getEmailDomain, isAllowedSchoolEmail, normalizeEmail } from '@/lib/auth'
+import { getEmailDomain, normalizeEmail } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get('authorization')
@@ -19,20 +19,15 @@ export async function POST(req: NextRequest) {
   }
 
   const normalizedEmail = normalizeEmail(user.email)
-  if (!isAllowedSchoolEmail(normalizedEmail)) {
-    return NextResponse.json({ error: 'invalid_domain' }, { status: 403 })
-  }
-
   const domain = getEmailDomain(normalizedEmail)
-  const allowedDomains = getAllowedSchoolDomains()
-  if (!allowedDomains.includes(domain)) {
-    return NextResponse.json({ error: 'invalid_domain' }, { status: 403 })
-  }
 
+  // Only allow emails from universities that exist and are active in our DB.
+  // This is the single source of truth — no separate env var list needed.
   const { data: rawUniversity } = await adminSupabase
     .from('universities')
     .select('id')
     .eq('domain', domain)
+    .eq('active', true)
     .single()
   const university = rawUniversity as { id: string } | null
 

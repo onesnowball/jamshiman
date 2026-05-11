@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BookOpen, GraduationCap, MessageSquare, Plus } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
 import { FlagButton } from '@/components/FlagButton'
 import { CourseDiscussionTab } from '@/components/course/CourseDiscussionTab'
 import { CourseReviewForm } from '@/components/forms/CourseReviewForm'

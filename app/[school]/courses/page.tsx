@@ -4,6 +4,10 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { getUniversityBySlug } from '@/lib/school'
 import type { Course } from '@/types/database'
 
+// Always fetch fresh — no cookies() call here so Next.js would otherwise
+// cache the Supabase query and serve stale results after new courses are added.
+export const dynamic = 'force-dynamic'
+
 type CourseListItem = Course & {
   departments: { name: string | null } | null
   reviewCount: number
