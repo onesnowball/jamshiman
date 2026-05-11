@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import Link from 'next/link'
-import { Flag, Users, UserCog, Shield, BookOpen, Layers, AlertCircle } from 'lucide-react'
+import { Flag, Users, UserCog, Shield, BookOpen, Layers, AlertCircle, ShieldOff } from 'lucide-react'
 import { getAdminViewer } from '@/lib/server-auth'
 
 export default async function AdminPage() {
@@ -45,7 +45,7 @@ export default async function AdminPage() {
   }
 
   // ── Stats — all scoped to the target university ───────────────────────────
-  let flagCount = 0, userCount = 0, advisorCount = 0, courseCount = 0
+  let flagCount = 0, userCount = 0, advisorCount = 0, courseCount = 0, suspReqCount = 0
 
   if (targetUniversityId) {
     const uid = targetUniversityId
@@ -54,7 +54,7 @@ export default async function AdminPage() {
     const { data: uniPosts } = await supabase.from('posts').select('id').eq('university_id', uid)
     const postIds = (uniPosts ?? []).map((p: { id: string }) => p.id)
 
-    const [flagRes, userRes, advisorRes, courseRes] = await Promise.all([
+    const [flagRes, userRes, advisorRes, courseRes, suspReqRes] = await Promise.all([
       postIds.length
         ? supabase.from('flags').select('*', { count: 'exact', head: true })
             .eq('status', 'pending')
@@ -63,19 +63,22 @@ export default async function AdminPage() {
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('university_id', uid),
       supabase.from('advisors').select('*', { count: 'exact', head: true }).eq('university_id', uid).eq('active', true),
       supabaseAny.from('courses').select('*', { count: 'exact', head: true }).eq('university_id', uid),
+      supabaseAny.from('suspension_requests').select('*', { count: 'exact', head: true })
+        .eq('university_id', uid).eq('status', 'pending'),
     ])
 
-    flagCount = flagRes.count ?? 0
-    userCount = userRes.count ?? 0
+    flagCount    = flagRes.count ?? 0
+    userCount    = userRes.count ?? 0
     advisorCount = advisorRes.count ?? 0
-    courseCount = courseRes.count ?? 0
+    courseCount  = courseRes.count ?? 0
+    suspReqCount = suspReqRes.count ?? 0
   }
 
   const stats = [
-    { label: 'Pending flags',   value: flagCount,   icon: Flag,     href: '/admin/flags',    urgent: flagCount > 0 },
-    { label: 'Signed-in users', value: userCount,   icon: Users,    href: '/admin/users',    urgent: false },
-    { label: 'Active advisors', value: advisorCount, icon: UserCog, href: '/admin/advisors', urgent: false },
-    { label: 'Courses',         value: courseCount,  icon: BookOpen, href: '/admin/courses',  urgent: courseCount === 0 },
+    { label: 'Pending flags',        value: flagCount,    icon: Flag,      href: '/admin/flags',   urgent: flagCount > 0 },
+    { label: 'Suspension requests',  value: suspReqCount, icon: ShieldOff, href: '/admin/users',   urgent: suspReqCount > 0 },
+    { label: 'Signed-in users',      value: userCount,    icon: Users,     href: '/admin/users',   urgent: false },
+    { label: 'Active advisors',      value: advisorCount, icon: UserCog,   href: '/admin/advisors',urgent: false },
   ]
 
   const navLinks = [

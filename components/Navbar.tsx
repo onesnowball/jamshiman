@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NavbarClient } from './NavbarClient'
+import { SuspensionBanner } from './SuspensionBanner'
 
 export async function Navbar({ school }: { school?: string } = {}) {
   const viewer = await getOptionalViewer()
@@ -47,10 +48,13 @@ export async function Navbar({ school }: { school?: string } = {}) {
   }
 
   return (
-    <NavbarClient
-      isAdmin={isAnyAdmin}
-      school={resolvedSchool}
-      schools={schools}
-    />
+    <>
+      <NavbarClient
+        isAdmin={isAnyAdmin}
+        school={resolvedSchool}
+        schools={schools}
+      />
+      {viewer?.is_banned && <SuspensionBanner />}
+    </>
   )
 }

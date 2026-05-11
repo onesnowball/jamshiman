@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, FileText, MessageSquare, Shield, ShieldOff } from 'lucide-react'
+import { ChevronLeft, FileText, MessageSquare, Shield, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer, canAdminUniversity } from '@/lib/server-auth'
@@ -8,6 +8,8 @@ import { getAdminUniversity } from '@/lib/admin-context'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { UserBanButton } from '@/components/admin/UserBanButton'
 import { CampusAdminButton } from '@/components/admin/CampusAdminButton'
+import { SuspensionRequestButton } from '@/components/admin/SuspensionRequestButton'
+import { SuspensionReviewButtons } from '@/components/admin/SuspensionReviewButtons'
 import type { User } from '@/types/database'
 
 export default async function AdminUserDetailPage({
@@ -22,18 +24,17 @@ export default async function AdminUserDetailPage({
   const supabase = createAdminClient()
   const isGlobalAdmin = viewer.role === 'admin'
 
-  // Load the target user
+  // Target user (must belong to this university)
   const { data: userData } = await supabase
     .from('users')
     .select('*')
     .eq('id', params.userId)
-    .eq('university_id', university.id) // scoped to current university
+    .eq('university_id', university.id)
     .single()
 
   const user = userData as User | null
   if (!user || !canAdminUniversity(viewer, user.university_id)) redirect('/admin/users')
 
-  // Real email handle for global admin
   const emailMap = isGlobalAdmin ? await getAuthEmailMap([user.id]) : new Map<string, string>()
   const handle = isGlobalAdmin
     ? toPublicHandle(emailMap.get(user.id))
@@ -48,7 +49,25 @@ export default async function AdminUserDetailPage({
     .maybeSingle()
   const isCampusAdmin = !!campusAdminRow
 
-  // Posts by this user (active + archived + pending_delete)
+  // Pending suspension request for this user
+  const { data: suspReqRow } = await (supabase as any)
+    .from('suspension_requests')
+    .select('*')
+    .eq('target_user_id', user.id)
+    .eq('status', 'pending')
+    .maybeSingle()
+  const pendingSuspensionRequest = suspReqRow ?? null
+
+  // Pending appeal from this user (only relevant if they're banned)
+  const { data: appealRow } = await (supabase as any)
+    .from('suspension_appeals')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('status', 'pending')
+    .maybeSingle()
+  const pendingAppeal = appealRow ?? null
+
+  // Posts
   const { data: postsData } = await (supabase as any)
     .from('posts')
     .select('id, title, body, created_at, status, dept_id, departments(name, slug)')
@@ -62,10 +81,10 @@ export default async function AdminUserDetailPage({
     departments: { name: string; slug: string } | null
   }>
 
-  // Comments by this user
+  // Comments
   const { data: commentsData } = await (supabase as any)
     .from('comments')
-    .select('id, body, created_at, status, post_id, posts(title, dept_id, departments(slug))')
+    .select('id, body, created_at, status, post_id, posts(title, departments(slug))')
     .eq('author_id', user.id)
     .order('created_at', { ascending: false })
     .limit(50)
@@ -76,7 +95,6 @@ export default async function AdminUserDetailPage({
     posts: { title: string; departments: { slug: string } | null } | null
   }>
 
-  // Derive the school slug from the university domain (e.g. "umich.edu" → "umich")
   const schoolSlug = university.domain.replace('.edu', '')
 
   function statusBadge(status: string) {
@@ -113,7 +131,7 @@ export default async function AdminUserDetailPage({
             </p>
           </div>
 
-          {/* Actions */}
+          {/* Actions — only for non-admin users */}
           {user.id !== viewer.id && user.role !== 'admin' && (
             <div className="flex items-center gap-2 flex-shrink-0">
               {isGlobalAdmin && (
@@ -123,10 +141,59 @@ export default async function AdminUserDetailPage({
                   isCampusAdmin={isCampusAdmin}
                 />
               )}
-              <UserBanButton userId={user.id} isBanned={user.is_banned} />
+              {/* Unsuspend is always direct; suspending goes through the request flow */}
+              {user.is_banned ? (
+                <UserBanButton userId={user.id} isBanned={true} />
+              ) : (
+                <SuspensionRequestButton
+                  userId={user.id}
+                  isGlobalAdmin={isGlobalAdmin}
+                  hasPendingRequest={!!pendingSuspensionRequest}
+                />
+              )}
             </div>
           )}
         </div>
+
+        {/* Pending suspension request — visible to global admins */}
+        {pendingSuspensionRequest && isGlobalAdmin && (
+          <div className="card p-5 border-amber-200 bg-amber-50 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <h2 className="text-sm font-semibold text-amber-900">Suspension requested</h2>
+              <span className="text-xs text-amber-600 ml-auto">
+                {new Date(pendingSuspensionRequest.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            </div>
+            <p className="text-sm text-amber-800 leading-relaxed">{pendingSuspensionRequest.reason}</p>
+            <SuspensionReviewButtons requestId={pendingSuspensionRequest.id} />
+          </div>
+        )}
+
+        {/* Pending suspension request — visible to campus admins as status */}
+        {pendingSuspensionRequest && !isGlobalAdmin && (
+          <div className="card p-4 border-amber-200 bg-amber-50 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <p className="text-sm text-amber-800">
+              A suspension request is pending global admin review.
+            </p>
+          </div>
+        )}
+
+        {/* Pending appeal — visible to global admins */}
+        {pendingAppeal && isGlobalAdmin && (
+          <div className="card p-5 border-brand-200 bg-brand-50 space-y-3">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-brand-600" />
+              <h2 className="text-sm font-semibold text-brand-900">Appeal submitted</h2>
+              <span className="text-xs text-brand-600 ml-auto">
+                {new Date(pendingAppeal.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            </div>
+            <p className="text-sm text-brand-800 leading-relaxed">{pendingAppeal.reason}</p>
+            <SuspensionReviewButtons appealId={pendingAppeal.id} userId={user.id} />
+          </div>
+        )}
 
         {/* Posts */}
         <section className="space-y-2">
@@ -193,9 +260,7 @@ export default async function AdminUserDetailPage({
                         ↳ {comment.posts.title}
                       </p>
                     )}
-                    <div className="flex items-center gap-1.5">
-                      {statusBadge(comment.status)}
-                    </div>
+                    {statusBadge(comment.status)}
                     <p className="text-sm text-gray-700 line-clamp-2 mt-0.5">{comment.body}</p>
                   </div>
                   <p className="text-xs text-gray-400 flex-shrink-0 pt-1">
