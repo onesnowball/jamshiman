@@ -9,9 +9,10 @@ type University = { id: string; name: string; domain: string }
 interface Props {
   departments: (Department & { universities: { name: string } | null })[]
   universities: University[]
+  isGlobalAdmin?: boolean
 }
 
-export function AcademicDeptManager({ departments: initial, universities }: Props) {
+export function AcademicDeptManager({ departments: initial, universities, isGlobalAdmin = false }: Props) {
   const [depts, setDepts] = useState(initial)
   const [showCreate, setShowCreate] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -253,14 +254,16 @@ export function AcademicDeptManager({ departments: initial, universities }: Prop
                         }
                         {dept.active ? 'Visible' : 'Hidden'}
                       </button>
-                      <button
-                        onClick={() => setConfirmDelete(dept.id)}
-                        disabled={!!loading}
-                        className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border border-transparent text-gray-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
-                        title="Delete department"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      {isGlobalAdmin && (
+                        <button
+                          onClick={() => setConfirmDelete(dept.id)}
+                          disabled={!!loading}
+                          className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border border-transparent text-gray-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+                          title="Delete department"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
 

@@ -15,6 +15,7 @@ export default async function AdminDepartmentsPage() {
   if (!university) redirect('/admin')
 
   const supabase = createAdminClient()
+  const isGlobalAdmin = viewer.role === 'admin'
 
   const { data: deptData } = await (supabase as any)
     .from('departments')
@@ -43,6 +44,7 @@ export default async function AdminDepartmentsPage() {
         <AcademicDeptManager
           departments={departments}
           universities={[university]}
+          isGlobalAdmin={isGlobalAdmin}
         />
       </main>
     </div>
