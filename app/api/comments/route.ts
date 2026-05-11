@@ -24,6 +24,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
+  // L-7: Verify the post belongs to the same university as the commenter.
+  const { data: post } = await supabase
+    .from('posts')
+    .select('university_id')
+    .eq('id', parsed.data.post_id)
+    .single()
+
+  if (!post) {
+    return NextResponse.json({ error: 'Post not found.' }, { status: 404 })
+  }
+
+  if ((post as { university_id: string }).university_id !== viewer.university_id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const supabaseAny = supabase as any
   const { data, error } = await supabaseAny
     .from('comments')

@@ -49,7 +49,7 @@ export default async function SchedulePage({
           Build a private weekly plan from seeded courses and manually-entered meeting times.
         </p>
       </div>
-      <ScheduleBuilder schedules={schedules} courses={courses} initialScheduleId={selectedScheduleId} />
+      <ScheduleBuilder schedules={schedules} courses={courses} initialScheduleId={selectedScheduleId} school={params.school} />
     </main>
   )
 }

@@ -22,6 +22,12 @@ const BoardQuerySchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
+  // H-8: Require authentication and scope posts to the viewer's university.
+  const { viewer, supabase } = await getActionClient()
+  if (!viewer) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const parsed = BoardQuerySchema.safeParse({
     dept_id: searchParams.get('dept_id') ?? undefined,
@@ -34,11 +40,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { supabase } = await getActionClient()
   let query = supabase
     .from('posts')
     .select('*')
     .eq('status', 'active')
+    .eq('university_id', viewer.university_id)
     .order('created_at', { ascending: false })
     .limit(parsed.data.limit)
 
@@ -126,6 +132,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Course not found.' }, { status: 404 })
     }
 
+    // H-4: Prevent cross-school posting — user must belong to the same university.
+    if ((course as { university_id: string }).university_id !== viewer.university_id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     insertPayload = {
       author_id: viewer.id,
       dept_id: (course as { dept_id: string }).dept_id,
@@ -150,6 +161,11 @@ export async function POST(req: NextRequest) {
 
     if (!department) {
       return NextResponse.json({ error: 'Department not found.' }, { status: 404 })
+    }
+
+    // H-4: Prevent cross-school posting — user must belong to the same university.
+    if ((department as { university_id: string }).university_id !== viewer.university_id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     insertPayload = {

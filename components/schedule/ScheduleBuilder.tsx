@@ -47,10 +47,12 @@ export function ScheduleBuilder({
   schedules,
   courses,
   initialScheduleId,
+  school,
 }: {
   schedules: ScheduleWithBlocks[]
   courses: Course[]
   initialScheduleId?: string
+  school?: string
 }) {
   const router = useRouter()
   const [selectedScheduleId, setSelectedScheduleId] = useState(initialScheduleId ?? schedules[0]?.id ?? '')
@@ -102,7 +104,7 @@ export function ScheduleBuilder({
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Could not create schedule.')
 
-      window.location.href = `/schedule?schedule=${data.schedule.id}`
+      window.location.href = school ? `/${school}/schedule?schedule=${data.schedule.id}` : `/schedule?schedule=${data.schedule.id}`
     } catch (err: any) {
       setError(err.message || 'Could not create schedule.')
     } finally {
@@ -123,7 +125,7 @@ export function ScheduleBuilder({
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Could not delete schedule.')
-      window.location.href = '/schedule'
+      window.location.href = school ? `/${school}/schedule` : '/schedule'
     } catch (err: any) {
       setError(err.message || 'Could not delete schedule.')
     } finally {

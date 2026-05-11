@@ -35,10 +35,6 @@ function LoginPageContent() {
     'northwestern.edu': 'Northwestern',
   }
 
-  // Admin emails can log in via any school's portal
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '')
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
-
   useEffect(() => {
     const errorCode = searchParams.get('error')
     if (!errorCode) return
@@ -56,17 +52,9 @@ function LoginPageContent() {
     e.preventDefault()
     setError('')
     const normalizedEmail = normalizeEmail(email)
-    const isAdmin = adminEmails.includes(normalizedEmail)
 
-    // If a school is selected, enforce that domain — unless it's an admin email
-    if (displayDomain && !isAdmin) {
-      if (!normalizedEmail.endsWith(`@${displayDomain}`)) {
-        setError(`Only @${displayDomain} addresses accepted here.`)
-        return
-      }
-    }
-
-    // Must still be a globally allowed domain
+    // H-11: Domain enforcement is server-side only. Client just validates against
+    // the global allowed-domains list — no admin-email whitelist in the bundle.
     if (!isAllowedSchoolEmail(normalizedEmail, allowedDomains)) {
       setError(`Only ${allowedDomains.map(d => `@${d}`).join(', ')} addresses accepted.`)
       return

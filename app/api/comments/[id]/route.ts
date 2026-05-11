@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient } from '@/lib/server-auth'
+import { getActionClient, canAdminUniversity } from '@/lib/server-auth'
 
 async function getComment(commentId: string, supabase: any) {
   const { data } = await supabase
@@ -48,8 +48,22 @@ export async function PATCH(
 
   const body = await req.json()
 
-  // Admin status update (archive/restore)
-  if (viewer.role === 'admin' && 'status' in body) {
+  // Admin status update (archive/restore) — allowed for global and campus admins.
+  if ('status' in body) {
+    // Verify this admin can manage the comment's university via its parent post.
+    const { data: commentRow } = await (supabase as any)
+      .from('comments')
+      .select('post_id')
+      .eq('id', params.id)
+      .single()
+    const { data: postRow } = commentRow
+      ? await supabase.from('posts').select('university_id').eq('id', commentRow.post_id).single()
+      : { data: null }
+
+    if (!postRow || !canAdminUniversity(viewer, (postRow as { university_id: string }).university_id)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const { status } = body as { status: string }
     if (!['active', 'archived', 'removed'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status.' }, { status: 400 })

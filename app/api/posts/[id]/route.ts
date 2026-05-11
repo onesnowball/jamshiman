@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getActionClient } from '@/lib/server-auth'
+import { getActionClient, canAdminUniversity } from '@/lib/server-auth'
 
 export async function DELETE(
   _req: NextRequest,
@@ -39,7 +39,18 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   const { viewer, supabase } = await getActionClient()
-  if (!viewer || viewer.role !== 'admin') {
+  if (!viewer) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // Only global admins or campus admins managing this post's university may update status.
+  const { data: post } = await supabase
+    .from('posts')
+    .select('university_id')
+    .eq('id', params.id)
+    .single()
+
+  if (!post || !canAdminUniversity(viewer, (post as { university_id: string }).university_id)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

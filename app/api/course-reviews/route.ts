@@ -31,6 +31,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
+  // H-6: Verify the course belongs to the same university as the reviewer.
+  const { data: course } = await supabase
+    .from('courses')
+    .select('university_id')
+    .eq('id', parsed.data.course_id)
+    .single()
+
+  if (!course) {
+    return NextResponse.json({ error: 'Course not found.' }, { status: 404 })
+  }
+
+  if ((course as { university_id: string }).university_id !== viewer.university_id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const supabaseAny = supabase as any
   const { data, error } = await supabaseAny
     .from('course_reviews')

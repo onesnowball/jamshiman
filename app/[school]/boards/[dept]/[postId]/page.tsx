@@ -106,7 +106,8 @@ export default async function BoardPostPage({
             {viewer?.id === post.author_id && (
               <DeletePostButton postId={post.id} redirectTo={`/${params.school}/boards/${department.slug}`} />
             )}
-            {viewer?.role === 'admin' && (
+            {/* L-3: Show archive button for global admins AND campus admins managing this university. */}
+            {(viewer?.role === 'admin' || (viewer?.campusAdminUniversityIds ?? []).includes(university.id)) && (
               <ArchivePostButton postId={post.id} currentStatus={post.status} />
             )}
             <FlagButton contentType="post" contentId={postWithHandle.id} />

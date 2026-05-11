@@ -15,10 +15,12 @@ export async function CourseDiscussionTab({
   courseId,
   courseCode,
   school,
+  universityName,
 }: {
   courseId: string
   courseCode: string
   school?: string
+  universityName?: string
 }) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
@@ -67,7 +69,7 @@ export async function CourseDiscussionTab({
           <div>
             <p className="font-medium text-gray-900">Sign in to start a class thread</p>
             <p className="text-sm text-gray-500 mt-1">
-              Reading stays open, but posting is limited to verified UMich users so course discussion stays high-signal.
+              Reading stays open, but posting is limited to verified {universityName ?? 'university'} users so course discussion stays high-signal.
             </p>
             <Link href="/auth/login" className="btn-secondary mt-4">Sign in</Link>
           </div>

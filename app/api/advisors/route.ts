@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getActionClient } from '@/lib/server-auth'
 
 export async function GET(req: NextRequest) {
-  const supabase = createClient()
+  // H-7: Require authentication and scope results to the viewer's university.
+  const { viewer, supabase } = await getActionClient()
+  if (!viewer) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const q = searchParams.get('q') || ''
   const dept = searchParams.get('dept') || ''
@@ -20,6 +25,7 @@ export async function GET(req: NextRequest) {
       )
     `)
     .eq('active', true)
+    .eq('university_id', viewer.university_id)
     .order('name')
     .range((page - 1) * limit, page * limit - 1)
 

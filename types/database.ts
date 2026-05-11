@@ -1,5 +1,5 @@
 export type DegreeType = 'ms' | 'phd'
-export type ContentStatus = 'active' | 'flagged' | 'removed' | 'pending'
+export type ContentStatus = 'active' | 'flagged' | 'removed' | 'pending' | 'pending_delete' | 'archived'
 export type UserRole = 'student' | 'admin'
 export type FlagReason = 'inappropriate' | 'inaccurate' | 'spam' | 'harmful' | 'other'
 export type BoardType = 'department' | 'course'

@@ -39,6 +39,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
   }
 
+  // H-5: Verify the advisor belongs to the same university as the reviewer.
+  const supabaseAny = supabase as any
+  const { data: advisor } = await supabase
+    .from('advisors')
+    .select('university_id')
+    .eq('id', parsed.data.advisor_id)
+    .single()
+
+  if (!advisor) {
+    return NextResponse.json({ error: 'Advisor not found.' }, { status: 404 })
+  }
+
+  if ((advisor as { university_id: string }).university_id !== viewer.university_id) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const payload: Database['public']['Tables']['advisor_reviews']['Insert'] = {
     ...reviewPayload,
     reviewer_id: viewer.id,
@@ -46,7 +62,6 @@ export async function POST(req: NextRequest) {
     years_in_lab: null,
     is_current: false,
   }
-  const supabaseAny = supabase as any
 
   const { data, error } = await supabaseAny
     .from('advisor_reviews')

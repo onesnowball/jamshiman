@@ -10,8 +10,10 @@ const AccessSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const viewer = await getAdminViewer()
-  if (!viewer) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // C-1: Only the global admin (role === 'admin') may promote/demote users.
+  // Campus admins must not be able to escalate their own or others' privileges.
+  if (!viewer || viewer.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const body = await req.json()

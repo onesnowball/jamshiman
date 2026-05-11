@@ -6,6 +6,7 @@ import { CourseDiscussionTab } from '@/components/course/CourseDiscussionTab'
 import { CourseReviewForm } from '@/components/forms/CourseReviewForm'
 import { StarRating } from '@/components/ui/StarRating'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getUniversityBySlug } from '@/lib/school'
 import type { Course, CourseRatings, CourseReview } from '@/types/database'
 
 const RATING_LABELS: Record<keyof CourseRatings, string> = {
@@ -46,13 +47,14 @@ export default async function CoursePage({
   const supabase = createAdminClient()
   const activeTab = searchParams?.tab === 'discussion' ? 'discussion' : 'reviews'
 
-  const [{ data: courseData }, { data: reviewsData }] = await Promise.all([
+  const [{ data: courseData }, { data: reviewsData }, university] = await Promise.all([
     supabase.from('courses').select('*, departments(name)').eq('id', params.id).single(),
     supabase.from('course_reviews')
       .select('id, semester, degree_type, ratings, anonymized_text, created_at')
       .eq('course_id', params.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
+    getUniversityBySlug(params.school),
   ])
 
   const course = courseData as CoursePageCourse | null
@@ -197,7 +199,7 @@ export default async function CoursePage({
               ))}
             </>
           ) : (
-            <CourseDiscussionTab courseId={course.id} courseCode={course.code} school={params.school} />
+            <CourseDiscussionTab courseId={course.id} courseCode={course.code} school={params.school} universityName={university?.name} />
           )}
         </div>
       </div>

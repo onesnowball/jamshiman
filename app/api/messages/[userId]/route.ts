@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getActionClient } from '@/lib/server-auth'
+
+const UUIDSchema = z.string().uuid()
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: { userId: string } }
 ) {
+  // M-1: Validate that userId is a properly formatted UUID before using it in queries.
+  if (!UUIDSchema.safeParse(params.userId).success) {
+    return NextResponse.json({ error: 'Invalid user id.' }, { status: 400 })
+  }
+
   const { viewer, supabase } = await getActionClient()
   if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/server'
-import { getAdminViewer } from '@/lib/server-auth'
+import { getAdminViewer, canAdminUniversity } from '@/lib/server-auth'
 
 const AdvisorSchema = z.object({
   dept_id: z.string().uuid(),
@@ -39,6 +39,10 @@ export async function POST(req: NextRequest) {
 
   if (!department) {
     return NextResponse.json({ error: 'Department not found.' }, { status: 404 })
+  }
+
+  if (!canAdminUniversity(viewer, (department as { university_id: string }).university_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { data, error } = await supabaseAny
@@ -92,6 +96,10 @@ export async function PATCH(req: NextRequest) {
 
   if (!department) {
     return NextResponse.json({ error: 'Department not found.' }, { status: 404 })
+  }
+
+  if (!canAdminUniversity(viewer, (department as { university_id: string }).university_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { error } = await supabaseAny

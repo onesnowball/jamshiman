@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/server'
-import { getAdminViewer } from '@/lib/server-auth'
+import { getAdminViewer, canAdminUniversity } from '@/lib/server-auth'
 
 const CourseSchema = z.object({
   dept_id: z.string().uuid(),
@@ -37,6 +37,10 @@ export async function POST(req: NextRequest) {
 
   if (!department) {
     return NextResponse.json({ error: 'Department not found.' }, { status: 404 })
+  }
+
+  if (!canAdminUniversity(viewer, (department as { university_id: string }).university_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { data, error } = await supabaseAny
@@ -94,6 +98,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Department not found.' }, { status: 404 })
   }
 
+  if (!canAdminUniversity(viewer, (department as { university_id: string }).university_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { error } = await supabaseAny
     .from('courses')
     .update({
@@ -134,6 +142,21 @@ export async function DELETE(req: NextRequest) {
 
   const supabase = createAdminClient()
   const supabaseAny = supabase as any
+
+  // H-2 (DELETE): Verify the course belongs to a university this admin controls.
+  const { data: existingCourse } = await supabase
+    .from('courses')
+    .select('university_id')
+    .eq('id', id)
+    .single()
+
+  if (!existingCourse) {
+    return NextResponse.json({ error: 'Course not found.' }, { status: 404 })
+  }
+
+  if (!canAdminUniversity(viewer, (existingCourse as { university_id: string }).university_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const { error } = await supabaseAny
     .from('courses')

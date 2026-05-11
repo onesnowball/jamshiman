@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/server'
-import { getAdminViewer } from '@/lib/server-auth'
+import { getAdminViewer, canAdminUniversity } from '@/lib/server-auth'
 import { getContentTable } from '@/lib/content'
 import type { Database } from '@/types/database'
 
@@ -25,11 +25,37 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createAdminClient()
+  const supabaseAny = supabase as any
+
+  // H-3: Verify the content being actioned belongs to a university this admin controls.
+  // Resolve university_id from the content (post → university_id directly; comment → via post).
+  if (viewer.role !== 'admin') {
+    let contentUniversityId: string | null = null
+    if (parsed.data.contentType === 'post') {
+      const { data } = await supabase.from('posts').select('university_id').eq('id', parsed.data.contentId).single()
+      contentUniversityId = (data as { university_id: string } | null)?.university_id ?? null
+    } else if (parsed.data.contentType === 'comment') {
+      const { data: comment } = await supabase.from('comments').select('post_id').eq('id', parsed.data.contentId).single()
+      if (comment) {
+        const { data: post } = await supabase.from('posts').select('university_id').eq('id', (comment as { post_id: string }).post_id).single()
+        contentUniversityId = (post as { university_id: string } | null)?.university_id ?? null
+      }
+    } else if (parsed.data.contentType === 'review') {
+      const { data: review } = await supabase.from('advisor_reviews').select('advisor_id').eq('id', parsed.data.contentId).single()
+      if (review) {
+        const { data: advisor } = await supabase.from('advisors').select('university_id').eq('id', (review as { advisor_id: string }).advisor_id).single()
+        contentUniversityId = (advisor as { university_id: string } | null)?.university_id ?? null
+      }
+    }
+    if (!contentUniversityId || !canAdminUniversity(viewer, contentUniversityId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  }
+
   const flagUpdate = {
     status: parsed.data.action === 'dismiss' ? 'dismissed' : 'resolved',
     resolved_by: viewer.id,
   }
-  const supabaseAny = supabase as any
 
   const { error: flagError } = await supabaseAny
     .from('flags')
