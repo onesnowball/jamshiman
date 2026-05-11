@@ -47,6 +47,7 @@ const SendSchema = z.object({
 export async function POST(req: NextRequest) {
   const { viewer, supabase } = await getActionClient()
   if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (viewer.is_banned) return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
 
   const parsed = SendSchema.safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input.' }, { status: 400 })

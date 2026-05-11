@@ -42,6 +42,12 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Also ban/unban at the Supabase Auth level so the user cannot log in.
+  // ban_duration: '87600h' = 10 years (effectively permanent); 'none' = lift ban.
+  await supabase.auth.admin.updateUserById(parsed.data.user_id, {
+    ban_duration: parsed.data.is_banned ? '87600h' : 'none',
+  })
+
   await (supabase as any).from('audit_log').insert({
     admin_id: viewer.id,
     action: parsed.data.is_banned ? 'ban_user' : 'unban_user',

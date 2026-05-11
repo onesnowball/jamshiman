@@ -140,7 +140,9 @@ export default async function ProfilePage() {
                   <div>
                     <p className="text-sm font-medium text-gray-900">{review.advisors?.name ?? 'Advisor'}</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {review.degree_type.toUpperCase()} · {new Date(review.created_at).toLocaleDateString()}
+                      {(review as any).is_lab_member != null
+                        ? ((review as any).is_lab_member ? 'Lab member' : 'Non-lab student') + ' · '
+                        : ''}{new Date(review.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <span className={statusBadgeClass(review.status)}>

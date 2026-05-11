@@ -65,7 +65,8 @@ export interface Database {
           id: string
           advisor_id: string
           reviewer_id: string
-          degree_type: DegreeType
+          degree_type: DegreeType | null
+          is_lab_member: boolean | null
           ratings: AdvisorRatings
           original_text: string
           anonymized_text: string

@@ -18,7 +18,8 @@
       "Bash(grep -v \"^import\\\\|^$\")",
       "Bash(vercel --prod)",
       "Bash(npx vercel *)",
-      "Bash(git -C /Users/jamshin/Desktop/gradpeer remote -v)"
+      "Bash(git -C /Users/jamshin/Desktop/gradpeer remote -v)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

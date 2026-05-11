@@ -115,9 +115,11 @@ export default async function AdvisorPage({ params }: { params: { school: string
           {reviews.map(review => (
             <div key={review.id} className="card p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <span className={review.degree_type === 'phd' ? 'badge-blue' : 'badge-green'}>
-                  {review.degree_type.toUpperCase()}
-                </span>
+                {(review as any).is_lab_member != null && (
+                  <span className={(review as any).is_lab_member ? 'badge-blue' : 'badge-green'}>
+                    {(review as any).is_lab_member ? 'Lab member' : 'Non-lab student'}
+                  </span>
+                )}
                 <span className="text-xs text-gray-400">
                   {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </span>

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { Users, ShieldOff, Shield } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -83,10 +84,10 @@ export default async function AdminUsersPage() {
                 const isCampusAdmin = campusAdminIds.has(u.id)
                 const isGlobal = u.role === 'admin'
                 return (
-                  <div key={u.id} className="flex items-center justify-between px-4 py-3 gap-4">
-                    <div className="min-w-0 flex-1">
+                  <div key={u.id} className="flex items-center justify-between px-4 py-3 gap-4 hover:bg-gray-50/80 transition-colors group">
+                    <Link href={`/admin/users/${u.id}`} className="min-w-0 flex-1 block">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium text-gray-900 font-mono truncate">
+                        <p className="text-sm font-medium text-gray-900 font-mono truncate group-hover:text-brand-700 transition-colors">
                           {getDisplayLabel(u)}
                         </p>
                         {isGlobal && (
@@ -99,7 +100,7 @@ export default async function AdminUsersPage() {
                       <p className="text-xs text-gray-400 mt-0.5">
                         Joined {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
-                    </div>
+                    </Link>
 
                     {/* Actions — only global admin can manage admins */}
                     {u.id !== viewer.id && !isGlobal && (

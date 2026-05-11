@@ -31,6 +31,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
+  const isAdmin = viewer.role === 'admin' || viewer.campusAdminUniversityIds.length > 0
+  const supabaseAny = supabase as any
+
+  if (isAdmin) {
+    // Admins can flag unlimited times — upsert resets any existing flag back to pending.
+    const { error } = await supabaseAny
+      .from('flags')
+      .upsert(
+        {
+          reporter_id: viewer.id,
+          content_type: parsed.data.content_type,
+          content_id: parsed.data.content_id,
+          reason: parsed.data.reason,
+          notes: parsed.data.notes?.trim() || null,
+          status: 'pending',
+        },
+        { onConflict: 'reporter_id,content_type,content_id' }
+      )
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true }, { status: 201 })
+  }
+
+  // Regular users: once per content item (unique constraint enforced at DB level)
   const payload: Database['public']['Tables']['flags']['Insert'] = {
     reporter_id: viewer.id,
     content_type: parsed.data.content_type,
@@ -38,13 +61,11 @@ export async function POST(req: NextRequest) {
     reason: parsed.data.reason,
     notes: parsed.data.notes?.trim() || null,
   }
-  const supabaseAny = supabase as any
 
   const { error } = await supabaseAny.from('flags').insert(payload)
 
   if (error) {
-    // Unique constraint violation — this user already flagged this content.
-    // Treat as success so the UI shows "Reported" without an error message.
+    // Unique constraint violation — already reported.
     if (error.code === '23505') {
       return NextResponse.json({ ok: true, already_reported: true }, { status: 200 })
     }

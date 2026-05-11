@@ -144,9 +144,11 @@ export default async function AdvisorPage({ params }: { params: { id: string } }
               <div key={review.id} className="card p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className={review.degree_type === 'phd' ? 'badge-blue' : 'badge-green'}>
-                      {review.degree_type.toUpperCase()}
-                    </span>
+                    {(review as any).is_lab_member != null && (
+                      <span className={(review as any).is_lab_member ? 'badge-blue' : 'badge-green'}>
+                        {(review as any).is_lab_member ? 'Lab member' : 'Non-lab student'}
+                      </span>
+                    )}
                     {review.is_current && (
                       <span className="badge-gray text-[10px]">Current student</span>
                     )}

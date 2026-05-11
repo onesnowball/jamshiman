@@ -5,7 +5,7 @@ import type { Database } from '@/types/database'
 
 const ReviewSchema = z.object({
   advisor_id: z.string().uuid(),
-  degree_type: z.enum(['ms', 'phd']),
+  is_lab_member: z.boolean().nullable().optional(),
   ratings: z.object({
     mentorship: z.number().min(1).max(5),
     funding: z.number().min(1).max(5),
@@ -57,6 +57,8 @@ export async function POST(req: NextRequest) {
 
   const payload: Database['public']['Tables']['advisor_reviews']['Insert'] = {
     ...reviewPayload,
+    degree_type: null,
+    is_lab_member: parsed.data.is_lab_member ?? null,
     reviewer_id: viewer.id,
     status: 'active',
     years_in_lab: null,

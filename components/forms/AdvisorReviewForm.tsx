@@ -24,7 +24,7 @@ export function AdvisorReviewForm({ advisor, onSuccess }: Props) {
   const [ratings, setRatings] = useState<AdvisorRatings>({
     mentorship: 0, funding: 0, worklife: 0, communication: 0, career: 0,
   })
-  const [degreeType, setDegreeType] = useState<'ms' | 'phd'>('phd')
+  const [isLabMember, setIsLabMember] = useState<boolean | null>(null)
   const [originalText, setOriginalText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -42,7 +42,7 @@ export function AdvisorReviewForm({ advisor, onSuccess }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           advisor_id: advisor.id,
-          degree_type: degreeType,
+          is_lab_member: isLabMember,
           ratings,
           original_text: originalText,
         }),
@@ -88,25 +88,37 @@ export function AdvisorReviewForm({ advisor, onSuccess }: Props) {
 
       {step === 'form' && (
         <>
-          {/* Degree type */}
-          <div className="space-y-1.5">
-            <label className="section-label">Degree type</label>
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden w-40">
-              {(['ms', 'phd'] as const).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setDegreeType(t)}
-                  className={clsx(
-                    'flex-1 py-2 text-sm font-medium transition-colors',
-                    degreeType === t
-                      ? 'bg-brand-600 text-white'
-                      : 'text-gray-500 hover:bg-gray-50'
+          {/* Lab membership — optional */}
+          <div className="space-y-2">
+            <label className="section-label">Your relationship (optional)</label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsLabMember(prev => prev === true ? null : true)}
+                className={clsx(
+                  'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all',
+                  isLabMember === true
+                    ? 'bg-brand-600 text-white border-brand-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-brand-300'
+                )}
+              >
+                <span className={clsx(
+                  'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
+                  isLabMember === true ? 'bg-white border-white' : 'border-gray-300'
+                )}>
+                  {isLabMember === true && (
+                    <svg className="w-3 h-3 text-brand-600" fill="none" viewBox="0 0 12 12">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   )}
-                >
-                  {t.toUpperCase()}
-                </button>
-              ))}
+                </span>
+                Lab member
+              </button>
+              <p className="text-xs text-gray-400">Were / are a member of this advisor's lab</p>
             </div>
+            {isLabMember === null && (
+              <p className="text-xs text-gray-400 italic">Leave blank if you prefer not to say</p>
+            )}
           </div>
 
           {/* Ratings */}
