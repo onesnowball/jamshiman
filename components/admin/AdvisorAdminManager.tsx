@@ -9,6 +9,8 @@ type AdvisorRecord = Advisor & {
   departments: { name: string | null } | null
 }
 
+const BOARD_SLUGS = new Set(['general', 'career', 'housing', 'research', 'wellbeing', 'marketplace'])
+
 const emptyForm = {
   id: '',
   dept_id: '',
@@ -21,11 +23,14 @@ const emptyForm = {
 
 export function AdvisorAdminManager({
   advisors,
-  departments,
+  departments: allDepartments,
 }: {
   advisors: AdvisorRecord[]
   departments: Department[]
 }) {
+  // Advisors belong to academic departments only — exclude board topic slugs
+  const departments = allDepartments.filter(d => !BOARD_SLUGS.has(d.slug))
+
   const router = useRouter()
   const [form, setForm] = useState({
     ...emptyForm,

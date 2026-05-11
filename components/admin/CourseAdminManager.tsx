@@ -6,12 +6,16 @@ import type { Course, Department } from '@/types/database'
 
 type CourseWithDept = Course & { departments: { name: string } | null }
 
+const BOARD_SLUGS = new Set(['general', 'career', 'housing', 'research', 'wellbeing', 'marketplace'])
+
 interface Props {
   courses: CourseWithDept[]
   departments: Department[]
 }
 
-export function CourseAdminManager({ courses: initial, departments }: Props) {
+export function CourseAdminManager({ courses: initial, departments: allDepartments }: Props) {
+  // Courses belong to academic departments only — exclude board topic slugs
+  const departments = allDepartments.filter(d => !BOARD_SLUGS.has(d.slug))
   const [courses, setCourses] = useState<CourseWithDept[]>(initial)
   const [editing, setEditing] = useState<CourseWithDept | null>(null)
   const [creating, setCreating] = useState(false)
