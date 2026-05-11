@@ -84,9 +84,20 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
   }
 
-  // Academic departments: soft-delete only (advisors and courses depend on them).
+  // Academic departments: hard-delete, but block if advisors or courses still reference this dept.
   if (!dept.is_board_category) {
-    await (supabase as any).from('departments').update({ active: false }).eq('id', id)
+    const [{ count: advisorCount }, { count: courseCount }] = await Promise.all([
+      supabase.from('advisors').select('*', { count: 'exact', head: true }).eq('dept_id', id).eq('active', true),
+      (supabase as any).from('courses').select('*', { count: 'exact', head: true }).eq('dept_id', id),
+    ])
+    if ((advisorCount ?? 0) > 0 || (courseCount ?? 0) > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete: ${advisorCount ?? 0} active advisor(s) and ${courseCount ?? 0} course(s) are still in this department. Reassign or remove them first.` },
+        { status: 409 }
+      )
+    }
+    const { error: delErr } = await (supabase as any).from('departments').delete().eq('id', id)
+    if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
     return NextResponse.json({ ok: true })
   }
 

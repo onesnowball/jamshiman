@@ -274,7 +274,7 @@ export function AcademicDeptManager({ departments: initial, universities, isGlob
                         <div>
                           <p className="text-xs font-medium text-red-800">Delete "{dept.name}"?</p>
                           <p className="text-xs text-red-600 mt-0.5">
-                            Advisors and courses in this department won't be removed, but they'll lose their department association. This cannot be undone.
+                            This permanently removes the department. If any active advisors or courses are still assigned to it, the delete will be blocked — reassign them first.
                           </p>
                         </div>
                       </div>
