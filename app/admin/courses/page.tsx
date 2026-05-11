@@ -30,7 +30,7 @@ export default async function AdminCoursesPage() {
       .select('*')
       .eq('university_id', university.id)
       .eq('active', true)
-      .eq('is_board_category', false)   // academic depts only
+      .order('is_board_category', { ascending: true })  // academic depts first, board categories as fallback
       .order('name'),
   ])
 
