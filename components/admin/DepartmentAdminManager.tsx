@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Check, X, Loader2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Check, X, Loader2, ToggleLeft, ToggleRight, Info } from 'lucide-react'
 import type { Department } from '@/types/database'
 
 type University = { id: string; name: string; domain: string }
@@ -24,6 +24,10 @@ export function DepartmentAdminManager({ departments: initial, universities, isG
     name: '',
     slug: '',
   })
+
+  // University is always pre-set — only show the picker if somehow multiple
+  // universities are passed (shouldn't happen with current admin-context scoping)
+  const showUniversityPicker = universities.length > 1
 
   function autoSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -69,9 +73,6 @@ export function DepartmentAdminManager({ departments: initial, universities, isG
           <p className="text-sm font-medium text-gray-900">{dept.name}</p>
           <span className="text-[10px] text-gray-400 font-mono bg-gray-50 px-1.5 py-0.5 rounded">{dept.slug}</span>
         </div>
-        {isGlobalAdmin && (
-          <p className="text-xs text-gray-400 mt-0.5">{dept.universities?.name}</p>
-        )}
       </div>
       <button
         onClick={() => toggleActive(dept)}
@@ -86,7 +87,7 @@ export function DepartmentAdminManager({ departments: initial, universities, isG
           ? <Loader2 className="w-3 h-3 animate-spin" />
           : dept.active ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />
         }
-        {dept.active ? 'Active' : 'Inactive'}
+        {dept.active ? 'Visible' : 'Hidden'}
       </button>
     </div>
   )
@@ -98,21 +99,23 @@ export function DepartmentAdminManager({ departments: initial, universities, isG
       {/* Create form */}
       {creating ? (
         <div className="card p-5 space-y-4 border-brand-200">
-          <h3 className="font-medium text-gray-900">New department</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {isGlobalAdmin && (
-              <div className="sm:col-span-2">
-                <label className="section-label mb-1">University</label>
-                <select className="input" value={form.university_id} onChange={e => setForm(f => ({ ...f, university_id: e.target.value }))}>
-                  {universities.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-              </div>
-            )}
+          <h3 className="font-medium text-gray-900">New academic department</h3>
+
+          {showUniversityPicker && (
             <div>
-              <label className="section-label mb-1">Name</label>
+              <label className="section-label mb-1">University</label>
+              <select className="input" value={form.university_id} onChange={e => setForm(f => ({ ...f, university_id: e.target.value }))}>
+                {universities.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="section-label mb-1">Department name</label>
               <input
                 className="input"
-                placeholder="e.g. Computer Science"
+                placeholder="e.g. Neuroscience"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: autoSlug(e.target.value) }))}
               />
@@ -121,12 +124,14 @@ export function DepartmentAdminManager({ departments: initial, universities, isG
               <label className="section-label mb-1">Slug</label>
               <input
                 className="input font-mono text-sm"
-                placeholder="e.g. cs"
+                placeholder="e.g. neuroscience"
                 value={form.slug}
                 onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
               />
+              <p className="text-xs text-gray-400 mt-1">Appears in URLs — lowercase letters only, no spaces</p>
             </div>
           </div>
+
           <div className="flex gap-2">
             <button
               onClick={create}
@@ -147,26 +152,34 @@ export function DepartmentAdminManager({ departments: initial, universities, isG
         </button>
       )}
 
-      {/* Board categories */}
+      {/* Academic departments */}
       <div className="space-y-2">
-        <h3 className="font-medium text-gray-700 text-sm">Board categories</h3>
-        <p className="text-xs text-gray-400">These appear as filter chips on the community boards page.</p>
+        <h3 className="font-medium text-gray-700 text-sm">Academic departments</h3>
+        <p className="text-xs text-gray-400">Used for organizing advisors, courses, and department-specific boards.</p>
         <div className="card divide-y divide-gray-50">
-          {boardDepts.length === 0
-            ? <p className="text-sm text-gray-400 p-4">None yet.</p>
-            : boardDepts.map(d => <DeptRow key={d.id} dept={d} />)
+          {academicDepts.length === 0
+            ? <p className="text-sm text-gray-400 p-4">No academic departments yet. Add one above.</p>
+            : academicDepts.map(d => <DeptRow key={d.id} dept={d} />)
           }
         </div>
       </div>
 
-      {/* Academic departments */}
+      {/* Board categories */}
       <div className="space-y-2">
-        <h3 className="font-medium text-gray-700 text-sm">Academic departments</h3>
-        <p className="text-xs text-gray-400">Used for organizing courses and department-specific boards.</p>
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-gray-700 text-sm">Community board topics</h3>
+          <div className="group relative">
+            <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
+            <div className="absolute left-0 bottom-full mb-1 w-64 bg-gray-900 text-white text-xs rounded-lg p-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              These are the topic filter chips on the community boards page (General, Career, Housing…). Toggle visibility to show or hide a topic without deleting it.
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400">Toggle visibility to show or hide a topic on the boards page.</p>
         <div className="card divide-y divide-gray-50">
-          {academicDepts.length === 0
-            ? <p className="text-sm text-gray-400 p-4">None yet.</p>
-            : academicDepts.map(d => <DeptRow key={d.id} dept={d} />)
+          {boardDepts.length === 0
+            ? <p className="text-sm text-gray-400 p-4">None set up yet.</p>
+            : boardDepts.map(d => <DeptRow key={d.id} dept={d} />)
           }
         </div>
       </div>
