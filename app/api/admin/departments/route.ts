@@ -12,6 +12,7 @@ const CreateSchema = z.object({
 const UpdateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(80).optional(),
+  slug: z.string().min(1).max(40).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, hyphens').optional(),
   active: z.boolean().optional(),
 })
 

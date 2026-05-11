@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import Link from 'next/link'
-import { Flag, Users, UserCog, Shield, BookOpen, Layers, AlertCircle, ShieldOff } from 'lucide-react'
+import { Flag, Users, UserCog, Shield, BookOpen, GraduationCap, Hash, AlertCircle, ShieldOff } from 'lucide-react'
 import { getAdminViewer } from '@/lib/server-auth'
 
 export default async function AdminPage() {
@@ -83,7 +83,8 @@ export default async function AdminPage() {
 
   const navLinks = [
     { href: '/admin/flags',       icon: Flag,     label: 'Review flagged content', desc: 'Approve or remove reported posts and reviews' },
-    { href: '/admin/departments', icon: Layers,   label: 'Manage departments',      desc: 'Create board categories and academic departments' },
+    { href: '/admin/departments', icon: GraduationCap, label: 'Manage departments', desc: 'Academic departments for advisors and courses' },
+    { href: '/admin/boards',      icon: Hash,         label: 'Manage board topics',   desc: 'Community topic filters shown on the boards page' },
     { href: '/admin/courses',     icon: BookOpen, label: 'Manage courses',          desc: 'Add, edit, and seed the course catalog' },
     { href: '/admin/advisors',    icon: UserCog,  label: 'Manage advisors',         desc: 'Create, edit, and deactivate advisor listings' },
     ...(isGlobalAdmin
