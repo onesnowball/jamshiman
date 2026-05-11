@@ -15,7 +15,10 @@
       "Bash(curl -s -L -H 'User-Agent: Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml' -H 'Accept-Language: en-US,en;q=0.9' -H 'Cache-Control: no-cache' https://me.engin.umich.edu/people/printable-directory/)",
       "Bash(grep -A5 \"mihaela-banu\\\\|Mihaela Banu\" /tmp/faculty_filtered.json | head -20)",
       "WebFetch(domain:web.archive.org)",
-      "Bash(grep -v \"^import\\\\|^$\")"
+      "Bash(grep -v \"^import\\\\|^$\")",
+      "Bash(vercel --prod)",
+      "Bash(npx vercel *)",
+      "Bash(git -C /Users/jamshin/Desktop/gradpeer remote -v)"
     ]
   }
 }

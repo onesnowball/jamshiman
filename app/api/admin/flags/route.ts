@@ -3,10 +3,8 @@ import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer, canAdminUniversity } from '@/lib/server-auth'
 import { getContentTable } from '@/lib/content'
-import type { Database } from '@/types/database'
 
 const FlagActionSchema = z.object({
-  flagId: z.string().uuid(),
   contentType: z.enum(['review', 'course_review', 'post', 'comment']),
   contentId: z.string().uuid(),
   action: z.enum(['dismiss', 'remove']),
@@ -27,8 +25,7 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient()
   const supabaseAny = supabase as any
 
-  // H-3: Verify the content being actioned belongs to a university this admin controls.
-  // Resolve university_id from the content (post → university_id directly; comment → via post).
+  // H-3: Verify content belongs to a university this admin controls.
   if (viewer.role !== 'admin') {
     let contentUniversityId: string | null = null
     if (parsed.data.contentType === 'post') {
@@ -52,15 +49,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const flagUpdate = {
-    status: parsed.data.action === 'dismiss' ? 'dismissed' : 'resolved',
-    resolved_by: viewer.id,
-  }
-
+  // Resolve ALL pending flags for this content in one action.
+  // Multiple reporters → one admin decision clears them all.
+  const newFlagStatus = parsed.data.action === 'dismiss' ? 'dismissed' : 'resolved'
   const { error: flagError } = await supabaseAny
     .from('flags')
-    .update(flagUpdate)
-    .eq('id', parsed.data.flagId)
+    .update({ status: newFlagStatus, resolved_by: viewer.id })
+    .eq('content_id', parsed.data.contentId)
+    .eq('content_type', parsed.data.contentType)
+    .eq('status', 'pending')
 
   if (flagError) {
     return NextResponse.json({ error: flagError.message }, { status: 500 })
@@ -68,10 +65,9 @@ export async function POST(req: NextRequest) {
 
   if (parsed.data.action === 'remove') {
     const table = getContentTable(parsed.data.contentType)
-    const contentUpdate = { status: 'removed' }
     const { error: contentError } = await supabaseAny
       .from(table)
-      .update(contentUpdate)
+      .update({ status: 'removed' })
       .eq('id', parsed.data.contentId)
 
     if (contentError) {
@@ -79,17 +75,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const auditEntry = {
+  await supabaseAny.from('audit_log').insert({
     admin_id: viewer.id,
     action: parsed.data.action === 'dismiss' ? 'dismiss_flag' : 'remove_flagged_content',
     target_type: parsed.data.contentType,
     target_id: parsed.data.contentId,
-    metadata: {
-      flag_id: parsed.data.flagId,
-    },
-  }
-
-  await supabaseAny.from('audit_log').insert(auditEntry)
+    metadata: {},
+  })
 
   return NextResponse.json({ ok: true })
 }

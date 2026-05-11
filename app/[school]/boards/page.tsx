@@ -10,19 +10,24 @@ import type { Department, Post } from '@/types/database'
 
 type FeedPost = Post & { commentCount: number; authorLabel: string; deptName: string; upvoteCount: number }
 
-const GENERAL_SLUGS = ['general', 'career', 'housing', 'research', 'wellbeing', 'marketplace']
-
 export default async function BoardsPage({
   params,
   searchParams,
 }: {
   params: { school: string }
-  searchParams?: { dept?: string }
+  searchParams?: { dept?: string; returnTo?: string }
 }) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
   const university = await getUniversityBySlug(params.school)
   if (!university) return null
+
+  // Admin campus-switcher round-trip: middleware set last_school cookie on this
+  // request, now redirect to the target page so admin sees the new context.
+  if (searchParams?.returnTo === 'admin') {
+    const { redirect } = await import('next/navigation')
+    redirect('/admin')
+  }
 
   const { data: deptData } = await supabase
     .from('departments')
@@ -32,11 +37,14 @@ export default async function BoardsPage({
     .order('name')
 
   const raw = (deptData ?? []) as Department[]
-  const departments = [
-    ...raw.filter(d => GENERAL_SLUGS.includes(d.slug)).sort((a, b) => GENERAL_SLUGS.indexOf(a.slug) - GENERAL_SLUGS.indexOf(b.slug)),
-    ...raw.filter(d => !GENERAL_SLUGS.includes(d.slug)),
-  ]
-  const boardFilterDepts = departments.filter(d => GENERAL_SLUGS.includes(d.slug))
+  // Board categories first (General before others), then academic departments
+  const boardFirst = raw.filter(d => d.is_board_category)
+  const academic = raw.filter(d => !d.is_board_category)
+  // Keep General at front if present
+  const generalIdx = boardFirst.findIndex(d => d.slug === 'general')
+  if (generalIdx > 0) boardFirst.unshift(...boardFirst.splice(generalIdx, 1))
+  const departments = [...boardFirst, ...academic]
+  const boardFilterDepts = boardFirst
   const deptMap = new Map(departments.map(d => [d.id, d]))
 
   const activeDept = searchParams?.dept

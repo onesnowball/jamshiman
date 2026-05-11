@@ -73,7 +73,7 @@ export default async function AdminPage() {
 
   const stats = [
     { label: 'Pending flags',   value: flagCount,   icon: Flag,     href: '/admin/flags',    urgent: flagCount > 0 },
-    { label: 'Signed-in users', value: userCount,   icon: Users,    href: null,              urgent: false },
+    { label: 'Signed-in users', value: userCount,   icon: Users,    href: '/admin/users',    urgent: false },
     { label: 'Active advisors', value: advisorCount, icon: UserCog, href: '/admin/advisors', urgent: false },
     { label: 'Courses',         value: courseCount,  icon: BookOpen, href: '/admin/courses',  urgent: courseCount === 0 },
   ]

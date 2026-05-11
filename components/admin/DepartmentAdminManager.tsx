@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Check, X, Loader2, ToggleLeft, ToggleRight, Info } from 'lucide-react'
+import { Plus, Check, X, Loader2, ToggleLeft, ToggleRight, Trash2, AlertTriangle, GraduationCap, Hash } from 'lucide-react'
 import type { Department } from '@/types/database'
 
 type University = { id: string; name: string; domain: string }
-
-const BOARD_SLUGS = ['general', 'career', 'housing', 'research', 'wellbeing', 'marketplace']
 
 interface Props {
   departments: (Department & { universities: { name: string } | null })[]
@@ -14,40 +12,54 @@ interface Props {
   isGlobalAdmin: boolean
 }
 
+type FormMode = { type: 'academic' } | { type: 'board' } | null
+
 export function DepartmentAdminManager({ departments: initial, universities, isGlobalAdmin }: Props) {
   const [depts, setDepts] = useState(initial)
-  const [creating, setCreating] = useState(false)
+  const [formMode, setFormMode] = useState<FormMode>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({
-    university_id: universities[0]?.id ?? '',
-    name: '',
-    slug: '',
-  })
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [form, setForm] = useState({ name: '', slug: '' })
 
-  // University is always pre-set — only show the picker if somehow multiple
-  // universities are passed (shouldn't happen with current admin-context scoping)
-  const showUniversityPicker = universities.length > 1
+  const universityId = universities[0]?.id ?? ''
+
+  const boardDepts = depts.filter(d => d.is_board_category)
+  const academicDepts = depts.filter(d => !d.is_board_category)
 
   function autoSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   }
 
+  function openForm(type: 'academic' | 'board') {
+    setForm({ name: '', slug: '' })
+    setError('')
+    setFormMode({ type })
+  }
+
   async function create() {
+    if (!formMode) return
     setLoading('create')
     setError('')
     const res = await fetch('/api/admin/departments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        university_id: universityId,
+        name: form.name.trim(),
+        slug: form.slug.trim(),
+        is_board_category: formMode.type === 'board',
+      }),
     })
     const data = await res.json()
     setLoading(null)
     if (!res.ok) { setError(data.error || 'Failed.'); return }
-    const uni = universities.find(u => u.id === form.university_id) ?? null
-    setDepts(prev => [...prev, { ...data.department, universities: uni ? { name: uni.name } : null }])
-    setCreating(false)
-    setForm({ university_id: universities[0]?.id ?? '', name: '', slug: '' })
+    const uni = universities[0] ?? null
+    setDepts(prev => [...prev, {
+      ...data.department,
+      universities: uni ? { name: uni.name } : null,
+    }])
+    setFormMode(null)
   }
 
   async function toggleActive(dept: typeof initial[0]) {
@@ -63,24 +75,39 @@ export function DepartmentAdminManager({ departments: initial, universities, isG
     setDepts(prev => prev.map(d => d.id === dept.id ? { ...d, active: !d.active } : d))
   }
 
-  const boardDepts = depts.filter(d => BOARD_SLUGS.includes(d.slug))
-  const academicDepts = depts.filter(d => !BOARD_SLUGS.includes(d.slug))
+  async function deleteDept(id: string) {
+    setLoading(id)
+    setError('')
+    const res = await fetch('/api/admin/departments', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    setLoading(null)
+    setConfirmDelete(null)
+    if (!res.ok) { const d = await res.json(); setError(d.error || 'Failed.'); return }
+    setDepts(prev => prev.filter(d => d.id !== id))
+  }
 
-  const DeptRow = ({ dept }: { dept: typeof initial[0] }) => (
-    <div className="flex items-center justify-between p-4 gap-4">
+  const isGeneralBoard = (dept: typeof initial[0]) => dept.slug === 'general'
+
+  const AcademicRow = ({ dept }: { dept: typeof initial[0] }) => (
+    <div className="flex items-center justify-between px-4 py-3 gap-4 group">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-gray-900">{dept.name}</p>
-          <span className="text-[10px] text-gray-400 font-mono bg-gray-50 px-1.5 py-0.5 rounded">{dept.slug}</span>
+          <p className="text-sm font-medium text-gray-900 truncate">{dept.name}</p>
+          <span className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded shrink-0">
+            {dept.slug}
+          </span>
         </div>
       </div>
       <button
         onClick={() => toggleActive(dept)}
         disabled={loading === dept.id}
-        className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
+        className={`shrink-0 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-all ${
           dept.active
-            ? 'bg-green-50 border-green-200 text-green-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
-            : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-green-50 hover:border-green-200 hover:text-green-700'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
+            : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
         }`}
       >
         {loading === dept.id
@@ -92,97 +119,215 @@ export function DepartmentAdminManager({ departments: initial, universities, isG
     </div>
   )
 
-  return (
-    <div className="space-y-6">
-      {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-
-      {/* Create form */}
-      {creating ? (
-        <div className="card p-5 space-y-4 border-brand-200">
-          <h3 className="font-medium text-gray-900">New academic department</h3>
-
-          {showUniversityPicker && (
-            <div>
-              <label className="section-label mb-1">University</label>
-              <select className="input" value={form.university_id} onChange={e => setForm(f => ({ ...f, university_id: e.target.value }))}>
-                {universities.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="section-label mb-1">Department name</label>
-              <input
-                className="input"
-                placeholder="e.g. Neuroscience"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: autoSlug(e.target.value) }))}
-              />
-            </div>
-            <div>
-              <label className="section-label mb-1">Slug</label>
-              <input
-                className="input font-mono text-sm"
-                placeholder="e.g. neuroscience"
-                value={form.slug}
-                onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
-              />
-              <p className="text-xs text-gray-400 mt-1">Appears in URLs — lowercase letters only, no spaces</p>
+  const BoardRow = ({ dept }: { dept: typeof initial[0] }) => {
+    const isGeneral = isGeneralBoard(dept)
+    const isConfirming = confirmDelete === dept.id
+    return (
+      <div className="px-4 py-3 gap-4 group">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-gray-900 truncate">{dept.name}</p>
+              <span className="text-[10px] text-gray-400 font-mono bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                #{dept.slug}
+              </span>
             </div>
           </div>
-
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={create}
-              disabled={loading === 'create' || !form.name.trim() || !form.slug.trim()}
-              className="btn-primary text-sm disabled:opacity-50"
+              onClick={() => toggleActive(dept)}
+              disabled={loading === dept.id}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border transition-all ${
+                dept.active
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700'
+                  : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+              }`}
             >
-              {loading === 'create' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Create
+              {loading === dept.id
+                ? <Loader2 className="w-3 h-3 animate-spin" />
+                : dept.active ? <ToggleRight className="w-3 h-3" /> : <ToggleLeft className="w-3 h-3" />
+              }
+              {dept.active ? 'Visible' : 'Hidden'}
             </button>
-            <button onClick={() => setCreating(false)} className="btn-secondary text-sm">
-              <X className="w-4 h-4" /> Cancel
-            </button>
+            {!isGeneral && (
+              <button
+                onClick={() => setConfirmDelete(dept.id)}
+                disabled={loading === dept.id}
+                className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border border-transparent text-gray-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+                title="Delete this board topic"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+            {isGeneral && (
+              <span className="text-xs text-gray-400 px-2">Protected</span>
+            )}
           </div>
         </div>
-      ) : (
-        <button onClick={() => setCreating(true)} className="btn-primary text-sm">
-          <Plus className="w-4 h-4" /> New department
+
+        {/* Confirm delete panel */}
+        {isConfirming && (
+          <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-100 space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium text-red-800">
+                  Delete "{dept.name}"?
+                </p>
+                <p className="text-xs text-red-600 mt-0.5">
+                  All posts in this topic will be moved to <strong>General</strong> automatically. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => deleteDept(dept.id)}
+                disabled={loading === dept.id}
+                className="btn-danger text-xs py-1 px-3"
+              >
+                {loading === dept.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                Yes, delete & move posts
+              </button>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="btn-secondary text-xs py-1 px-3"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const CreateForm = ({ type }: { type: 'academic' | 'board' }) => (
+    <div className="card p-5 space-y-4 border-brand-200 bg-brand-50/30">
+      <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+        {type === 'academic'
+          ? <><GraduationCap className="w-4 h-4 text-brand-600" /> New academic department</>
+          : <><Hash className="w-4 h-4 text-brand-600" /> New community board topic</>
+        }
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="section-label mb-1 block">
+            {type === 'academic' ? 'Department name' : 'Topic name'}
+          </label>
+          <input
+            className="input"
+            placeholder={type === 'academic' ? 'e.g. Computer Science' : 'e.g. Internships'}
+            value={form.name}
+            autoFocus
+            onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: autoSlug(e.target.value) }))}
+          />
+        </div>
+        <div>
+          <label className="section-label mb-1 block">Slug</label>
+          <input
+            className="input font-mono text-sm"
+            placeholder={type === 'academic' ? 'e.g. cs' : 'e.g. internships'}
+            value={form.slug}
+            onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            {type === 'academic'
+              ? 'Used in URLs — lowercase, no spaces'
+              : 'Used in URLs — lowercase, no spaces. Appears as #slug in boards'
+            }
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={create}
+          disabled={loading === 'create' || !form.name.trim() || !form.slug.trim()}
+          className="btn-primary text-sm disabled:opacity-50"
+        >
+          {loading === 'create' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          Create
         </button>
+        <button onClick={() => setFormMode(null)} className="btn-secondary text-sm">
+          <X className="w-4 h-4" /> Cancel
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="space-y-8">
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">
+          {error}
+        </p>
       )}
 
-      {/* Academic departments */}
-      <div className="space-y-2">
-        <h3 className="font-medium text-gray-700 text-sm">Academic departments</h3>
-        <p className="text-xs text-gray-400">Used for organizing advisors, courses, and department-specific boards.</p>
-        <div className="card divide-y divide-gray-50">
-          {academicDepts.length === 0
-            ? <p className="text-sm text-gray-400 p-4">No academic departments yet. Add one above.</p>
-            : academicDepts.map(d => <DeptRow key={d.id} dept={d} />)
-          }
-        </div>
-      </div>
-
-      {/* Board categories */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <h3 className="font-medium text-gray-700 text-sm">Community board topics</h3>
-          <div className="group relative">
-            <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" />
-            <div className="absolute left-0 bottom-full mb-1 w-64 bg-gray-900 text-white text-xs rounded-lg p-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-              These are the topic filter chips on the community boards page (General, Career, Housing…). Toggle visibility to show or hide a topic without deleting it.
-            </div>
+      {/* ── Academic Departments ─────────────────────────────── */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-brand-500" />
+              Academic Departments
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Used to organise advisors, courses, and dept-specific boards. Hidden departments won't appear in dropdowns.
+            </p>
           </div>
+          {formMode === null && (
+            <button onClick={() => openForm('academic')} className="btn-secondary text-xs py-1.5 shrink-0">
+              <Plus className="w-3.5 h-3.5" /> Add dept
+            </button>
+          )}
         </div>
-        <p className="text-xs text-gray-400">Toggle visibility to show or hide a topic on the boards page.</p>
-        <div className="card divide-y divide-gray-50">
-          {boardDepts.length === 0
-            ? <p className="text-sm text-gray-400 p-4">None set up yet.</p>
-            : boardDepts.map(d => <DeptRow key={d.id} dept={d} />)
-          }
+
+        {formMode?.type === 'academic' && <CreateForm type="academic" />}
+
+        <div className="card overflow-hidden divide-y divide-gray-50">
+          {academicDepts.length === 0 ? (
+            <div className="p-6 text-center">
+              <GraduationCap className="w-7 h-7 text-gray-200 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No academic departments yet.</p>
+              <p className="text-xs text-gray-400 mt-0.5">Add one so admins can attach advisors and courses.</p>
+            </div>
+          ) : (
+            academicDepts.map(d => <AcademicRow key={d.id} dept={d} />)
+          )}
         </div>
-      </div>
+      </section>
+
+      {/* ── Community Board Topics ───────────────────────────── */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+              <Hash className="w-4 h-4 text-brand-500" />
+              Community Board Topics
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Topic filters on the boards page. <strong>General</strong> is protected — it's the landing zone when other topics are deleted.
+            </p>
+          </div>
+          {formMode === null && (
+            <button onClick={() => openForm('board')} className="btn-secondary text-xs py-1.5 shrink-0">
+              <Plus className="w-3.5 h-3.5" /> Add topic
+            </button>
+          )}
+        </div>
+
+        {formMode?.type === 'board' && <CreateForm type="board" />}
+
+        <div className="card overflow-hidden divide-y divide-gray-50">
+          {boardDepts.length === 0 ? (
+            <div className="p-6 text-center">
+              <Hash className="w-7 h-7 text-gray-200 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No board topics yet.</p>
+            </div>
+          ) : (
+            boardDepts.map(d => <BoardRow key={d.id} dept={d} />)
+          )}
+        </div>
+      </section>
     </div>
   )
 }

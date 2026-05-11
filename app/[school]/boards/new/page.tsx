@@ -5,8 +5,6 @@ import { getOptionalViewer } from '@/lib/server-auth'
 import { getUniversityBySlug } from '@/lib/school'
 import type { Department } from '@/types/database'
 
-const GENERAL_SLUGS = ['general', 'career', 'housing', 'research', 'wellbeing', 'marketplace']
-
 export default async function NewPostPage({ params }: { params: { school: string } }) {
   const viewer = await getOptionalViewer()
   if (!viewer) redirect(`/auth/login?school=${params.school}.edu`)
@@ -23,10 +21,11 @@ export default async function NewPostPage({ params }: { params: { school: string
     .order('name')
 
   const raw = (data ?? []) as Department[]
-  const departments = [
-    ...raw.filter(d => GENERAL_SLUGS.includes(d.slug)).sort((a, b) => GENERAL_SLUGS.indexOf(a.slug) - GENERAL_SLUGS.indexOf(b.slug)),
-    ...raw.filter(d => !GENERAL_SLUGS.includes(d.slug)),
-  ]
+  // Board categories first (General at front), then academic depts
+  const boardDepts = raw.filter(d => d.is_board_category)
+  const generalIdx = boardDepts.findIndex(d => d.slug === 'general')
+  if (generalIdx > 0) boardDepts.unshift(...boardDepts.splice(generalIdx, 1))
+  const departments = [...boardDepts, ...raw.filter(d => !d.is_board_category)]
 
   return (
     <main className="max-w-2xl mx-auto px-4 py-8 page-enter">

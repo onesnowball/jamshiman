@@ -10,6 +10,11 @@ const FlagSchema = z.object({
   notes: z.string().max(600).optional().or(z.literal('')),
 })
 
+const UnflagSchema = z.object({
+  content_type: z.enum(['review', 'course_review', 'post', 'comment']),
+  content_id: z.string().uuid(),
+})
+
 export async function POST(req: NextRequest) {
   const { viewer, supabase } = await getActionClient()
   if (!viewer) {
@@ -38,8 +43,72 @@ export async function POST(req: NextRequest) {
   const { error } = await supabaseAny.from('flags').insert(payload)
 
   if (error) {
+    // Unique constraint violation — this user already flagged this content.
+    // Treat as success so the UI shows "Reported" without an error message.
+    if (error.code === '23505') {
+      return NextResponse.json({ ok: true, already_reported: true }, { status: 200 })
+    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true }, { status: 201 })
+}
+
+/** DELETE — lets a user retract their own flag (undo report). */
+export async function DELETE(req: NextRequest) {
+  const { viewer, supabase } = await getActionClient()
+  if (!viewer) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const parsed = UnflagSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+  }
+
+  // Only delete the viewer's own pending flag — resolved/dismissed flags stay for the audit trail.
+  const { error } = await (supabase as any)
+    .from('flags')
+    .delete()
+    .eq('reporter_id', viewer.id)
+    .eq('content_type', parsed.data.content_type)
+    .eq('content_id', parsed.data.content_id)
+    .eq('status', 'pending')
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true })
+}
+
+/** GET — check whether the current viewer has already flagged a piece of content. */
+export async function GET(req: NextRequest) {
+  const { viewer, supabase } = await getActionClient()
+  if (!viewer) {
+    return NextResponse.json({ reported: false })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const content_type = searchParams.get('content_type')
+  const content_id = searchParams.get('content_id')
+
+  if (!content_type || !content_id) {
+    return NextResponse.json({ error: 'Missing params' }, { status: 400 })
+  }
+
+  const { data } = await (supabase as any)
+    .from('flags')
+    .select('id, status')
+    .eq('reporter_id', viewer.id)
+    .eq('content_type', content_type)
+    .eq('content_id', content_id)
+    .maybeSingle()
+
+  return NextResponse.json({
+    reported: !!data,
+    // Only show undo option while the flag is still pending (not yet actioned by admin).
+    canUndo: data?.status === 'pending',
+  })
 }

@@ -25,6 +25,7 @@ export interface Database {
           name: string
           slug: string
           active: boolean
+          is_board_category: boolean
           created_at: string
         }
         Insert: Omit<departments['Row'], 'id' | 'created_at'>

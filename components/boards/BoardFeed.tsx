@@ -2,17 +2,29 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { MessageSquare, ThumbsUp, Search } from 'lucide-react'
+import { MessageSquare, ThumbsUp, Search, Hash } from 'lucide-react'
 
 type FeedPost = {
   id: string
   title: string
+  body?: string
   created_at: string
   dept_id: string
   deptName: string
   authorLabel: string
   upvoteCount: number
   commentCount: number
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${Math.max(1, mins)}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export function BoardFeed({
@@ -35,6 +47,7 @@ export function BoardFeed({
 
   return (
     <div className="space-y-3">
+      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input
@@ -46,36 +59,54 @@ export function BoardFeed({
       </div>
 
       {!filtered.length ? (
-        <div className="card p-12 text-center text-gray-400">
-          <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-40" />
-          <p className="text-sm font-medium text-gray-700">
-            {query ? 'No posts match your search.' : 'No posts yet.'}
+        <div className="card p-14 text-center">
+          <MessageSquare className="w-9 h-9 mx-auto mb-3 text-gray-200" />
+          <p className="text-sm font-semibold text-gray-700">
+            {query ? 'No posts match your search.' : 'Nothing here yet.'}
           </p>
+          {!query && (
+            <p className="text-xs text-gray-400 mt-1">Be the first to start a thread.</p>
+          )}
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-          {filtered.map(post => {
+        <div className="card overflow-hidden divide-y divide-gray-50/80">
+          {filtered.map((post, i) => {
             const deptSlug = deptSlugMap[post.dept_id] ?? 'unknown'
+            const shortDept = post.deptName
+              .replace(' Engineering', ' Eng')
+              .replace(' Sciences', '')
+              .replace(' & Technology', '')
             return (
               <Link
                 key={post.id}
                 href={`/${school}/boards/${deptSlug}/${post.id}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                className="group flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50/80 transition-colors"
               >
+                {/* Left: engagement bar */}
+                <div className="flex flex-col items-center gap-1 pt-0.5 text-gray-300 group-hover:text-gray-400 transition-colors flex-shrink-0 min-w-[32px]">
+                  <ThumbsUp className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold tabular-nums">{post.upvoteCount}</span>
+                </div>
+
+                {/* Content */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[10px] text-brand-700 font-medium bg-brand-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                      {post.deptName.replace(' Engineering', '').replace(' Sciences', '')}
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-brand-600 font-semibold bg-brand-50 border border-brand-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                      <Hash className="w-2.5 h-2.5" />{shortDept}
                     </span>
                     <span className="text-[10px] text-gray-400 truncate">
-                      {post.authorLabel} · {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {post.authorLabel} · {timeAgo(post.created_at)}
                     </span>
                   </div>
-                  <h2 className="text-sm font-medium text-gray-900 leading-snug">{post.title}</h2>
+                  <h2 className="text-sm font-semibold text-gray-900 leading-snug group-hover:text-brand-700 transition-colors">
+                    {post.title}
+                  </h2>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0 text-xs text-gray-400">
-                  <span className="flex items-center gap-1"><ThumbsUp className="w-3 h-3" />{post.upvoteCount}</span>
-                  <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" />{post.commentCount}</span>
+
+                {/* Right: comment count */}
+                <div className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0 pt-0.5">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span className="tabular-nums font-medium">{post.commentCount}</span>
                 </div>
               </Link>
             )
