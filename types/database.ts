@@ -119,6 +119,7 @@ export interface Database {
           title: string
           body: string
           is_anonymous: boolean
+          is_pinned: boolean
           upvotes: number
           status: ContentStatus
           created_at: string

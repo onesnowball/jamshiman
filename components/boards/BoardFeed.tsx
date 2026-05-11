@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { MessageSquare, ThumbsUp, Search, Hash } from 'lucide-react'
+import { MessageSquare, ThumbsUp, Search, Hash, Pin } from 'lucide-react'
 
 type FeedPost = {
   id: string
@@ -14,6 +14,7 @@ type FeedPost = {
   authorLabel: string
   upvoteCount: number
   commentCount: number
+  is_pinned?: boolean
 }
 
 function timeAgo(dateStr: string): string {
@@ -70,7 +71,7 @@ export function BoardFeed({
         </div>
       ) : (
         <div className="card overflow-hidden divide-y divide-gray-50/80">
-          {filtered.map((post, i) => {
+          {filtered.map((post) => {
             const deptSlug = deptSlugMap[post.dept_id] ?? 'unknown'
             const shortDept = post.deptName
               .replace(' Engineering', ' Eng')
@@ -80,7 +81,7 @@ export function BoardFeed({
               <Link
                 key={post.id}
                 href={`/${school}/boards/${deptSlug}/${post.id}`}
-                className="group flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50/80 transition-colors"
+                className={`group flex items-start gap-3 px-4 py-3.5 hover:bg-gray-50/80 transition-colors ${post.is_pinned ? 'bg-amber-50/40 hover:bg-amber-50/60' : ''}`}
               >
                 {/* Left: engagement bar */}
                 <div className="flex flex-col items-center gap-1 pt-0.5 text-gray-300 group-hover:text-gray-400 transition-colors flex-shrink-0 min-w-[32px]">
@@ -90,7 +91,12 @@ export function BoardFeed({
 
                 {/* Content */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-1">
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    {post.is_pinned && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 font-semibold bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                        <Pin className="w-2.5 h-2.5" />Pinned
+                      </span>
+                    )}
                     <span className="inline-flex items-center gap-0.5 text-[10px] text-brand-600 font-semibold bg-brand-50 border border-brand-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
                       <Hash className="w-2.5 h-2.5" />{shortDept}
                     </span>

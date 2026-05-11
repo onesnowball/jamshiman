@@ -57,6 +57,7 @@ export default async function BoardsPage({
     .eq('board_type', 'department')
     .eq('status', 'active')
     .eq('university_id', university.id)
+    .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(50)
 

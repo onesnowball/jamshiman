@@ -44,6 +44,10 @@ const StatusSchema = z.object({
   status: z.enum(['active', 'archived', 'removed']),
 })
 
+const PinSchema = z.object({
+  is_pinned: z.boolean(),
+})
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -85,20 +89,34 @@ export async function PATCH(
     return NextResponse.json({ ok: true })
   }
 
-  // Admin status update
-  const parsed = StatusSchema.safeParse(body)
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid status.' }, { status: 400 })
-  }
-
-  const { data: post } = await supabase
+  // Shared admin check for status + pin actions
+  const { data: adminPost } = await supabase
     .from('posts')
     .select('university_id')
     .eq('id', params.id)
     .single()
 
-  if (!post || !canAdminUniversity(viewer, (post as { university_id: string }).university_id)) {
+  if (!adminPost || !canAdminUniversity(viewer, (adminPost as { university_id: string }).university_id)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // Admin pin toggle
+  if ('is_pinned' in body) {
+    const parsed = PinSchema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid value.' }, { status: 400 })
+
+    await (supabase as any)
+      .from('posts')
+      .update({ is_pinned: parsed.data.is_pinned })
+      .eq('id', params.id)
+
+    return NextResponse.json({ ok: true })
+  }
+
+  // Admin status update
+  const parsed = StatusSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid status.' }, { status: 400 })
   }
 
   await (supabase as any)

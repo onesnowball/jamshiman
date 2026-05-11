@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Lock, MessageSquareText, Mail } from 'lucide-react'
+import { Lock, MessageSquareText, Mail, Pin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
@@ -11,6 +11,7 @@ import { CommentForm } from '@/components/forms/CommentForm'
 import { UpvoteButton } from '@/components/boards/UpvoteButton'
 import { PostActions } from '@/components/boards/PostActions'
 import { ArchivePostButton } from '@/components/boards/ArchivePostButton'
+import { PinPostButton } from '@/components/boards/PinPostButton'
 import { CommentActions } from '@/components/boards/CommentActions'
 import type { Comment, Department, Post } from '@/types/database'
 
@@ -86,9 +87,15 @@ export default async function BoardPostPage({
         <Link href={`/${params.school}/boards/${department.slug}`} className="hover:text-gray-600">{department.name}</Link>
       </div>
 
-      <article className="card p-6 space-y-4">
+      <article className={`card p-6 space-y-4 ${post.is_pinned ? 'border-amber-200 bg-amber-50/30' : ''}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
+            {post.is_pinned && (
+              <div className="flex items-center gap-1 text-xs text-amber-600 font-medium mb-2">
+                <Pin className="w-3 h-3" />
+                Pinned
+              </div>
+            )}
             <h1 className="text-2xl font-semibold text-gray-900">{postWithHandle.title}</h1>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <p className="text-sm text-gray-400">
@@ -102,9 +109,11 @@ export default async function BoardPostPage({
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* L-3: Show archive button for global admins AND campus admins managing this university. */}
             {(viewer?.role === 'admin' || (viewer?.campusAdminUniversityIds ?? []).includes(university.id)) && (
-              <ArchivePostButton postId={post.id} currentStatus={post.status} />
+              <>
+                <PinPostButton postId={post.id} isPinned={post.is_pinned} />
+                <ArchivePostButton postId={post.id} currentStatus={post.status} />
+              </>
             )}
             <FlagButton contentType="post" contentId={postWithHandle.id} />
           </div>

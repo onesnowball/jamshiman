@@ -4,6 +4,7 @@ import { Lock, MessageSquare } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
+import { Pin } from 'lucide-react'
 import { getUniversityBySlug } from '@/lib/school'
 import { BoardPostForm } from '@/components/forms/BoardPostForm'
 import type { Department, Post } from '@/types/database'
@@ -34,6 +35,7 @@ export default async function DepartmentBoardPage({
     .eq('dept_id', department.id)
     .eq('board_type', 'department')
     .eq('status', 'active')
+    .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
   const posts = (postsData ?? []) as Post[]
 
@@ -91,10 +93,15 @@ export default async function DepartmentBoardPage({
             <Link
               key={post.id}
               href={`/${params.school}/boards/${department.slug}/${post.id}`}
-              className="card p-5 block hover:border-brand-200 hover:shadow-md transition-all"
+              className={`card p-5 block hover:border-brand-200 hover:shadow-md transition-all ${post.is_pinned ? 'border-amber-200 bg-amber-50/30' : ''}`}
             >
               <div className="flex items-start justify-between gap-4">
-                <div>
+                <div className="min-w-0 flex-1">
+                  {post.is_pinned && (
+                    <div className="flex items-center gap-1 text-[10px] text-amber-600 font-semibold mb-1.5">
+                      <Pin className="w-3 h-3" />Pinned
+                    </div>
+                  )}
                   <h2 className="font-medium text-gray-900">{post.title}</h2>
                   <p className="text-sm text-gray-600 leading-relaxed mt-2 line-clamp-3">{post.body}</p>
                 </div>
