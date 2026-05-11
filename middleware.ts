@@ -3,6 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Routes anyone can visit without being signed in
 const PUBLIC_PATHS = ['/', '/auth']
 
+// Top-level path segments that are NOT school slugs
+const RESERVED_SEGMENTS = new Set(['admin', 'profile', 'messages', 'auth', 'api', '_next'])
+
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
 }
@@ -31,7 +34,19 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  return NextResponse.next()
+  // Track the last school the user visited so that school-agnostic pages
+  // (profile, messages, admin) can keep the Navbar in the right school context.
+  const response = NextResponse.next()
+  const firstSegment = pathname.split('/')[1] ?? ''
+  if (firstSegment && !RESERVED_SEGMENTS.has(firstSegment)) {
+    response.cookies.set('last_school', firstSegment, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      sameSite: 'lax',
+    })
+  }
+
+  return response
 }
 
 export const config = {

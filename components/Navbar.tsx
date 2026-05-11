@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NavbarClient } from './NavbarClient'
@@ -8,6 +9,15 @@ export async function Navbar({ school }: { school?: string } = {}) {
   const supabase = createAdminClient()
 
   let resolvedSchool = school
+
+  // For global admins on non-school pages (profile, messages, admin),
+  // restore whichever school they last browsed via the last_school cookie.
+  if (!resolvedSchool && isGlobalAdmin) {
+    const lastSchool = cookies().get('last_school')?.value
+    if (lastSchool) resolvedSchool = lastSchool
+  }
+
+  // For regular users, fall back to their home university.
   if (!resolvedSchool && viewer?.university_id) {
     const { data } = await supabase
       .from('universities')
