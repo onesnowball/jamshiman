@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/Navbar'
 import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
 import { RatingDisplay, StarRating } from '@/components/ui/StarRating'
-import { FlaskConical, Clock, GraduationCap, Plus } from 'lucide-react'
+import { FlaskConical, GraduationCap, Plus } from 'lucide-react'
 import { FlagButton } from '@/components/FlagButton'
 import type { Advisor, AdvisorRatings, AdvisorReview, Database } from '@/types/database'
 
@@ -17,7 +17,7 @@ const RATING_LABELS: Record<keyof AdvisorRatings, string> = {
 
 type AdvisorPageAdvisor = Advisor & { departments: { name: string } | null }
 type AdvisorAggregate = Database['public']['Views']['advisor_aggregates']['Row']
-type AdvisorPageReview = Pick<AdvisorReview, 'id' | 'degree_type' | 'ratings' | 'anonymized_text' | 'years_in_lab' | 'is_current' | 'created_at'>
+type AdvisorPageReview = Pick<AdvisorReview, 'id' | 'degree_type' | 'ratings' | 'anonymized_text' | 'created_at'>
 
 export default async function AdvisorPage({ params }: { params: { school: string; id: string } }) {
   const supabase = createAdminClient()
@@ -26,7 +26,7 @@ export default async function AdvisorPage({ params }: { params: { school: string
     supabase.from('advisors').select('*, departments(name)').eq('id', params.id).single(),
     supabase.from('advisor_aggregates').select('*').eq('advisor_id', params.id).single(),
     supabase.from('advisor_reviews')
-      .select('id, degree_type, ratings, anonymized_text, years_in_lab, is_current, created_at')
+      .select('id, degree_type, ratings, anonymized_text, created_at')
       .eq('advisor_id', params.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
@@ -115,17 +115,9 @@ export default async function AdvisorPage({ params }: { params: { school: string
           {reviews.map(review => (
             <div key={review.id} className="card p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={review.degree_type === 'phd' ? 'badge-blue' : 'badge-green'}>
-                    {review.degree_type.toUpperCase()}
-                  </span>
-                  {review.is_current && <span className="badge-gray text-[10px]">Current student</span>}
-                  {review.years_in_lab && (
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />{review.years_in_lab} yr{review.years_in_lab > 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
+                <span className={review.degree_type === 'phd' ? 'badge-blue' : 'badge-green'}>
+                  {review.degree_type.toUpperCase()}
+                </span>
                 <span className="text-xs text-gray-400">
                   {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </span>

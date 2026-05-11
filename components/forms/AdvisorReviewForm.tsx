@@ -25,8 +25,6 @@ export function AdvisorReviewForm({ advisor, onSuccess }: Props) {
     mentorship: 0, funding: 0, worklife: 0, communication: 0, career: 0,
   })
   const [degreeType, setDegreeType] = useState<'ms' | 'phd'>('phd')
-  const [yearsInLab, setYearsInLab] = useState<string>('')
-  const [isCurrent, setIsCurrent] = useState(true)
   const [originalText, setOriginalText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -47,8 +45,6 @@ export function AdvisorReviewForm({ advisor, onSuccess }: Props) {
           degree_type: degreeType,
           ratings,
           original_text: originalText,
-          years_in_lab: yearsInLab ? parseInt(yearsInLab) : null,
-          is_current: isCurrent,
         }),
       })
       const data = await res.json()
@@ -92,52 +88,25 @@ export function AdvisorReviewForm({ advisor, onSuccess }: Props) {
 
       {step === 'form' && (
         <>
-          {/* Context fields */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="section-label">Degree type</label>
-              <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-                {(['ms', 'phd'] as const).map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setDegreeType(t)}
-                    className={clsx(
-                      'flex-1 py-2 text-sm font-medium transition-colors',
-                      degreeType === t
-                        ? 'bg-brand-600 text-white'
-                        : 'text-gray-500 hover:bg-gray-50'
-                    )}
-                  >
-                    {t.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+          {/* Degree type */}
+          <div className="space-y-1.5">
+            <label className="section-label">Degree type</label>
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden w-40">
+              {(['ms', 'phd'] as const).map(t => (
+                <button
+                  key={t}
+                  onClick={() => setDegreeType(t)}
+                  className={clsx(
+                    'flex-1 py-2 text-sm font-medium transition-colors',
+                    degreeType === t
+                      ? 'bg-brand-600 text-white'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  )}
+                >
+                  {t.toUpperCase()}
+                </button>
+              ))}
             </div>
-            <div className="space-y-1.5">
-              <label className="section-label">Years in lab</label>
-              <input
-                type="number"
-                min="0"
-                max="15"
-                placeholder="e.g. 2"
-                value={yearsInLab}
-                onChange={e => setYearsInLab(e.target.value)}
-                className="input"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              id="is-current"
-              type="checkbox"
-              checked={isCurrent}
-              onChange={e => setIsCurrent(e.target.checked)}
-              className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-            />
-            <label htmlFor="is-current" className="text-sm text-gray-600">
-              I am currently in this lab
-            </label>
           </div>
 
           {/* Ratings */}

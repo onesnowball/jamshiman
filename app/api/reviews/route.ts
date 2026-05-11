@@ -15,8 +15,6 @@ const ReviewSchema = z.object({
   }),
   original_text: z.string().min(50).max(3000),
   anonymized_text: z.string().min(20).max(3000).optional(),
-  years_in_lab: z.number().min(0).max(15).nullable(),
-  is_current: z.boolean(),
 })
 
 export async function POST(req: NextRequest) {
@@ -45,6 +43,8 @@ export async function POST(req: NextRequest) {
     ...reviewPayload,
     reviewer_id: viewer.id,
     status: 'active',
+    years_in_lab: null,
+    is_current: false,
   }
   const supabaseAny = supabase as any
 
