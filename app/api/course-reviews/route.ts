@@ -5,7 +5,7 @@ import { getActionClient } from '@/lib/server-auth'
 const CourseReviewSchema = z.object({
   course_id: z.string().uuid(),
   semester: z.string().min(4).max(30),
-  degree_type: z.enum(['ms', 'phd']),
+  degree_type: z.enum(['ms', 'phd']).optional().default('ms'),
   ratings: z.object({
     difficulty: z.number().min(1).max(5),
     usefulness: z.number().min(1).max(5),

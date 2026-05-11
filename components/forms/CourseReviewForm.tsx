@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 import { StarRating } from '@/components/ui/StarRating'
-import { clsx } from 'clsx'
 import type { Course, CourseRatings } from '@/types/database'
 
 const RATING_FIELDS: { key: keyof CourseRatings; label: string; description: string }[] = [
@@ -19,7 +18,6 @@ export function CourseReviewForm({
   course: Course & { dept_name?: string }
 }) {
   const [step, setStep] = useState<'form' | 'done'>('form')
-  const [degreeType, setDegreeType] = useState<'ms' | 'phd'>('phd')
   const [semester, setSemester] = useState('Fall 2026')
 
   const SEMESTER_OPTIONS = (() => {
@@ -51,7 +49,6 @@ export function CourseReviewForm({
         body: JSON.stringify({
           course_id: course.id,
           semester,
-          degree_type: degreeType,
           ratings,
           original_text: originalText,
         }),
@@ -90,38 +87,17 @@ export function CourseReviewForm({
         <p className="text-xs text-gray-400 mt-1">{course.dept_name}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="section-label">Degree type</label>
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            {(['ms', 'phd'] as const).map(type => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setDegreeType(type)}
-                className={clsx(
-                  'flex-1 py-2 text-sm font-medium transition-colors',
-                  degreeType === type ? 'bg-brand-600 text-white' : 'text-gray-500 hover:bg-gray-50'
-                )}
-              >
-                {type.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="section-label">Semester taken</label>
-          <select
-            value={semester}
-            onChange={event => setSemester(event.target.value)}
-            className="input"
-          >
-            {SEMESTER_OPTIONS.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+      <div className="space-y-1.5">
+        <label className="section-label">Semester taken</label>
+        <select
+          value={semester}
+          onChange={event => setSemester(event.target.value)}
+          className="input"
+        >
+          {SEMESTER_OPTIONS.map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
       </div>
 
       <div className="space-y-3">

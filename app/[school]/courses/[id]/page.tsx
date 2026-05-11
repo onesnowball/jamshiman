@@ -179,10 +179,7 @@ export default async function CoursePage({
               {reviews.map(review => (
                 <div key={review.id} className="card p-5 space-y-3">
                   <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className={review.degree_type === 'phd' ? 'badge-blue' : 'badge-green'}>{review.degree_type.toUpperCase()}</span>
-                      <span className="badge-gray">{review.semester}</span>
-                    </div>
+                    <span className="badge-gray">{review.semester}</span>
                     <span className="text-xs text-gray-400">
                       {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                     </span>
