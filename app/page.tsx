@@ -100,8 +100,9 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="py-6 text-center text-xs opacity-30 text-white">
-        Verified .edu only · Anonymous by default · No passwords
+      <footer className="py-6 text-center space-y-1">
+        <p className="text-xs opacity-30 text-white">Verified .edu only · Anonymous by default · No passwords</p>
+        <p className="text-xs text-blue-300 opacity-50 tracking-wide">Brought to you by medium_snowball</p>
       </footer>
     </div>
   )
