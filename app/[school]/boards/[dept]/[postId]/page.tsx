@@ -9,7 +9,7 @@ import { getUniversityBySlug } from '@/lib/school'
 import { FlagButton } from '@/components/FlagButton'
 import { CommentForm } from '@/components/forms/CommentForm'
 import { UpvoteButton } from '@/components/boards/UpvoteButton'
-import { DeletePostButton } from '@/components/boards/DeletePostButton'
+import { PostActions } from '@/components/boards/PostActions'
 import { ArchivePostButton } from '@/components/boards/ArchivePostButton'
 import { CommentActions } from '@/components/boards/CommentActions'
 import type { Comment, Department, Post } from '@/types/database'
@@ -101,10 +101,7 @@ export default async function BoardPostPage({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {viewer?.id === post.author_id && (
-              <DeletePostButton postId={post.id} redirectTo={`/${params.school}/boards/${department.slug}`} />
-            )}
+          <div className="flex items-center gap-2 flex-shrink-0">
             {/* L-3: Show archive button for global admins AND campus admins managing this university. */}
             {(viewer?.role === 'admin' || (viewer?.campusAdminUniversityIds ?? []).includes(university.id)) && (
               <ArchivePostButton postId={post.id} currentStatus={post.status} />
@@ -115,8 +112,16 @@ export default async function BoardPostPage({
 
         <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{postWithHandle.body}</p>
 
-        <div className="pt-1">
+        <div className="flex items-center justify-between pt-1">
           <UpvoteButton type="post" id={postWithHandle.id} initialCount={postWithHandle.upvoteCount} initialVoted={false} isLoggedIn={!!viewer} />
+          {viewer?.id === post.author_id && (
+            <PostActions
+              postId={post.id}
+              initialTitle={post.title}
+              initialBody={post.body}
+              redirectTo={`/${params.school}/boards/${department.slug}`}
+            />
+          )}
         </div>
       </article>
 
