@@ -71,7 +71,7 @@ export function FlagButton({
   }
 
   return (
-    <div className={clsx('space-y-2', className)}>
+    <div className={clsx(isOpen ? 'space-y-2' : 'inline-flex', className)}>
       <button
         type="button"
         onClick={() => setIsOpen(current => !current)}

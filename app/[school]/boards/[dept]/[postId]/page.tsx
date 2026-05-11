@@ -10,6 +10,7 @@ import { FlagButton } from '@/components/FlagButton'
 import { CommentForm } from '@/components/forms/CommentForm'
 import { UpvoteButton } from '@/components/boards/UpvoteButton'
 import { DeletePostButton } from '@/components/boards/DeletePostButton'
+import { ArchivePostButton } from '@/components/boards/ArchivePostButton'
 import { CommentActions } from '@/components/boards/CommentActions'
 import type { Comment, Department, Post } from '@/types/database'
 
@@ -104,6 +105,9 @@ export default async function BoardPostPage({
           <div className="flex items-center gap-2">
             {viewer?.id === post.author_id && (
               <DeletePostButton postId={post.id} redirectTo={`/${params.school}/boards/${department.slug}`} />
+            )}
+            {viewer?.role === 'admin' && (
+              <ArchivePostButton postId={post.id} currentStatus={post.status} />
             )}
             <FlagButton contentType="post" contentId={postWithHandle.id} />
           </div>

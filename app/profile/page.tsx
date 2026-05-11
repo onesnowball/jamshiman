@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { CalendarDays, MessageSquare, NotebookPen, UserCircle2 } from 'lucide-react'
+import { CalendarDays, NotebookPen, UserCircle2 } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
+import { ProfileActivity } from '@/components/profile/ProfileActivity'
 import type { AdvisorReview, CourseReview, Post, Comment, Schedule } from '@/types/database'
 
 type ProfileAdvisorReview = AdvisorReview & {
@@ -78,13 +79,13 @@ export default async function ProfilePage() {
       .from('posts')
       .select('*, departments(slug, name), universities(domain)')
       .eq('author_id', viewer.id)
-      .eq('status', 'active')
+      .in('status', ['active', 'pending_delete'])
       .order('created_at', { ascending: false }),
     supabase
       .from('comments')
       .select('*, posts(id, title)')
       .eq('author_id', viewer.id)
-      .eq('status', 'active')
+      .in('status', ['active', 'pending_delete'])
       .order('created_at', { ascending: false }),
     supabase
       .from('schedules')
@@ -187,48 +188,8 @@ export default async function ProfilePage() {
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-gray-500" />
-              <h2 className="font-medium text-gray-900">Threads and comments</h2>
-            </div>
-
-            {!posts.length && !comments.length ? (
-              <EmptyState
-                icon={MessageSquare}
-                title="No board activity yet"
-                body="Threads and comments you create will show up here."
-              />
-            ) : (
-              <div className="space-y-3">
-                {posts.map(post => {
-                  const school = post.universities?.domain?.split('.')[0]
-                  const href = school && post.departments?.slug
-                    ? `/${school}/boards/${post.departments.slug}/${post.id}`
-                    : '#'
-                  return (
-                  <Link
-                    key={post.id}
-                    href={href}
-                    className="card p-4 block"
-                  >
-                    <p className="text-sm font-medium text-gray-900">{post.title}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Thread · {post.departments?.name ?? 'Department'}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-3 line-clamp-3">{post.body}</p>
-                  </Link>
-                  )
-                })}
-
-                {comments.map(comment => (
-                  <div key={comment.id} className="card p-4">
-                    <p className="text-sm font-medium text-gray-900">{comment.posts?.title ?? 'Board comment'}</p>
-                    <p className="text-xs text-gray-400 mt-1">Comment</p>
-                    <p className="text-sm text-gray-600 mt-3 line-clamp-3">{comment.body}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <h2 className="font-medium text-gray-900">Threads and comments</h2>
+            <ProfileActivity initialPosts={posts as any} initialComments={comments as any} />
           </div>
 
           <div className="space-y-3">

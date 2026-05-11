@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { MessageSquare, ThumbsUp, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { BoardFeed } from '@/components/boards/BoardFeed'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
@@ -105,51 +106,19 @@ export default async function BoardsPage({
         ))}
       </div>
 
-      {/* Feed */}
-      {!feed.length ? (
-        <div className="card p-12 text-center text-gray-400">
-          <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-40" />
-          <p className="text-sm font-medium text-gray-700">No posts yet.</p>
-          {viewer && (
-            <Link href={`/${params.school}/boards/new`} className="btn-primary text-sm mt-4 inline-flex">
-              <Plus className="w-4 h-4" /> Start the first thread
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
-          {feed.map(post => {
-            const dept = deptMap.get(post.dept_id)
-            return (
-              <Link
-                key={post.id}
-                href={`/${params.school}/boards/${dept?.slug ?? 'unknown'}/${post.id}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[10px] text-brand-700 font-medium bg-brand-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                      {post.deptName.replace(' Engineering', '').replace(' Sciences', '')}
-                    </span>
-                    <span className="text-[10px] text-gray-400 truncate">
-                      {post.authorLabel} · {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <h2 className="text-sm font-medium text-gray-900 leading-snug">{post.title}</h2>
-                </div>
-                <div className="flex items-center gap-3 flex-shrink-0 text-xs text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <ThumbsUp className="w-3 h-3" />{post.upvoteCount}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3" />{post.commentCount}
-                  </span>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+      {/* New post CTA for empty state */}
+      {!feed.length && viewer && (
+        <Link href={`/${params.school}/boards/new`} className="btn-primary text-sm inline-flex">
+          <Plus className="w-4 h-4" /> Start the first thread
+        </Link>
       )}
+
+      {/* Feed with search */}
+      <BoardFeed
+        feed={feed}
+        school={params.school}
+        deptSlugMap={Object.fromEntries(Array.from(deptMap.entries()).map(([id, d]) => [id, d.slug]))}
+      />
     </main>
   )
 }

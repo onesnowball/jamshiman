@@ -17,13 +17,42 @@ export async function DELETE(
   if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const isOwner = (post as { author_id: string }).author_id === viewer.id
-  if (!isOwner && viewer.role !== 'admin') {
+  const isAdmin = viewer.role === 'admin'
+
+  if (!isOwner && !isAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // Admins remove immediately; owners submit for approval
+  const newStatus = isAdmin ? 'removed' : 'pending_delete'
+
+  await (supabase as any)
+    .from('posts')
+    .update({ status: newStatus })
+    .eq('id', params.id)
+
+  return NextResponse.json({ ok: true })
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { viewer, supabase } = await getActionClient()
+  if (!viewer || viewer.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const body = await req.json()
+  const { status } = body as { status: string }
+
+  if (!['active', 'archived', 'removed'].includes(status)) {
+    return NextResponse.json({ error: 'Invalid status.' }, { status: 400 })
   }
 
   await (supabase as any)
     .from('posts')
-    .update({ status: 'removed' })
+    .update({ status })
     .eq('id', params.id)
 
   return NextResponse.json({ ok: true })
