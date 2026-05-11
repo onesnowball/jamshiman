@@ -11,11 +11,19 @@ type CourseListItem = Course & {
   discussionCount: number
 }
 
-const DEPT_FILTERS = ['All', 'ME', 'EECS', 'AERO', 'IOE']
-
 export function CourseSearch({ courses, school }: { courses: CourseListItem[]; school?: string }) {
   const [query, setQuery] = useState('')
   const [dept, setDept] = useState('All')
+
+  // Derive department prefixes from actual course codes (e.g. "ME 301" → "ME")
+  const deptFilters = useMemo(() => {
+    const prefixes = new Set<string>()
+    for (const c of courses) {
+      const prefix = c.code.split(/[\s-]/)[0]
+      if (prefix) prefixes.add(prefix)
+    }
+    return ['All', ...Array.from(prefixes).sort()]
+  }, [courses])
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
@@ -39,21 +47,23 @@ export function CourseSearch({ courses, school }: { courses: CourseListItem[]; s
         />
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {DEPT_FILTERS.map(d => (
-          <button
-            key={d}
-            onClick={() => setDept(d)}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-              dept === d
-                ? 'bg-brand-600 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'
-            }`}
-          >
-            {d}
-          </button>
-        ))}
-      </div>
+      {deptFilters.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {deptFilters.map(d => (
+            <button
+              key={d}
+              onClick={() => setDept(d)}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                dept === d
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!filtered.length ? (
         <div className="card p-10 text-center text-gray-400">
