@@ -3,6 +3,7 @@ import { UserCog } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer } from '@/lib/server-auth'
+import { getAdminUniversity } from '@/lib/admin-context'
 import { AdvisorAdminManager } from '@/components/admin/AdvisorAdminManager'
 import type { Advisor, Department } from '@/types/database'
 
@@ -14,23 +15,24 @@ export default async function AdminAdvisorsPage() {
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
 
+  const university = await getAdminUniversity(viewer)
+  if (!university) redirect('/admin')
+
   const supabase = createAdminClient()
-  const isGlobalAdmin = viewer.role === 'admin'
-  const uniIds = isGlobalAdmin ? null : viewer.campusAdminUniversityIds
-
-  let advisorQuery = supabase
-    .from('advisors')
-    .select('*, departments(name)')
-    .order('active', { ascending: false })
-    .order('name')
-  if (uniIds) advisorQuery = (advisorQuery as any).in('university_id', uniIds)
-
-  let deptQuery = supabase.from('departments').select('*').eq('active', true).order('name')
-  if (uniIds) deptQuery = (deptQuery as any).in('university_id', uniIds)
 
   const [{ data: advisorsData }, { data: departmentsData }] = await Promise.all([
-    advisorQuery,
-    deptQuery,
+    (supabase as any)
+      .from('advisors')
+      .select('*, departments(name)')
+      .eq('university_id', university.id)
+      .order('active', { ascending: false })
+      .order('name'),
+    supabase
+      .from('departments')
+      .select('*')
+      .eq('university_id', university.id)
+      .eq('active', true)
+      .order('name'),
   ])
 
   const advisors = (advisorsData ?? []) as AdminAdvisor[]
@@ -43,9 +45,10 @@ export default async function AdminAdvisorsPage() {
         <div className="flex items-center gap-3">
           <UserCog className="w-5 h-5 text-brand-600" />
           <div>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">{university.name}</p>
             <h1 className="text-xl font-semibold text-gray-900">Manage advisors</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Create launch listings, correct metadata, and deactivate advisors without deleting history.
+            <p className="text-sm text-gray-500 mt-0.5">
+              Create listings, correct metadata, and deactivate advisors without deleting history.
             </p>
           </div>
         </div>
