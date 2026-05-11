@@ -20,14 +20,27 @@ export default async function CoursesPage({ params }: { params: { school: string
 
   const supabase = createAdminClient()
 
-  const { data: coursesData } = await (supabase as any)
-    .from('courses')
-    .select('*, departments(name)')
-    .eq('university_id', university.id)
-    .order('code')
-    .limit(200)
+  const [{ data: coursesData }, { data: deptData }] = await Promise.all([
+    (supabase as any)
+      .from('courses')
+      .select('*')
+      .eq('university_id', university.id)
+      .order('code')
+      .limit(200),
+    supabase
+      .from('departments')
+      .select('id, name')
+      .eq('university_id', university.id),
+  ])
 
-  const courses = (coursesData ?? []) as (Course & { departments: { name: string | null } | null })[]
+  const deptMap = new Map(
+    ((deptData ?? []) as Array<{ id: string; name: string }>).map(d => [d.id, d.name])
+  )
+
+  const courses = ((coursesData ?? []) as Course[]).map(c => ({
+    ...c,
+    departments: { name: deptMap.get(c.dept_id) ?? null },
+  })) as (Course & { departments: { name: string | null } | null })[]
 
   const courseItems: CourseListItem[] = await Promise.all(courses.map(async course => {
     const [{ count: reviewCount }, { count: discussionCount }] = await Promise.all([

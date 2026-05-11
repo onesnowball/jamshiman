@@ -13,18 +13,26 @@ export default async function AdvisorsPage({ params }: { params: { school: strin
 
   const supabase = createAdminClient()
 
-  const [{ data: advisorsData }, { data: aggData }] = await Promise.all([
-    supabase
+  const [{ data: advisorsData }, { data: deptData }, { data: aggData }] = await Promise.all([
+    (supabase as any)
       .from('advisors')
-      .select('*, departments(name)')
+      .select('*')
       .eq('active', true)
       .eq('university_id', university.id)
       .order('name')
       .limit(200),
+    supabase
+      .from('departments')
+      .select('id, name')
+      .eq('university_id', university.id),
     (supabase as any)
       .from('advisor_aggregates')
       .select('advisor_id, review_count, avg_overall'),
   ])
+
+  const deptMap = new Map(
+    ((deptData ?? []) as Array<{ id: string; name: string }>).map(d => [d.id, d.name])
+  )
 
   const aggMap = new Map(
     ((aggData ?? []) as Array<{ advisor_id: string; review_count: number; avg_overall: number }>)
@@ -33,6 +41,7 @@ export default async function AdvisorsPage({ params }: { params: { school: strin
 
   const advisors = ((advisorsData ?? []) as any[]).map(a => ({
     ...a,
+    departments: { name: deptMap.get(a.dept_id) ?? null },
     advisor_aggregates: aggMap.get(a.id) ?? null,
   }))
 
