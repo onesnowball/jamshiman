@@ -12,8 +12,10 @@ export default async function NewPostPage({ params }: { params: { school: string
   const university = await getUniversityBySlug(params.school)
   if (!university) redirect('/')
 
-  // Prevent cross-school posting — bounce the user to their own school's new post page
-  if (viewer.university_id !== university.id) {
+  // Prevent cross-school posting — bounce the user to their own school's new post page.
+  // Global admins are exempt and can post on any school's boards.
+  const isGlobalAdmin = viewer.role === 'admin'
+  if (!isGlobalAdmin && viewer.university_id !== university.id) {
     const supabaseAdmin = createAdminClient()
     const { data: viewerUni } = await supabaseAdmin
       .from('universities')

@@ -110,27 +110,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
   }
 
-  // 5-minute cooldown between new posts per user
-  const COOLDOWN_MS = 5 * 60 * 1000
-  const { data: lastPost } = await supabase
-    .from('posts')
-    .select('created_at')
-    .eq('author_id', viewer.id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
+  const isGlobalAdmin = viewer.role === 'admin'
 
-  if (lastPost) {
-    const elapsed = Date.now() - new Date((lastPost as { created_at: string }).created_at).getTime()
-    if (elapsed < COOLDOWN_MS) {
-      const secondsLeft = Math.ceil((COOLDOWN_MS - elapsed) / 1000)
-      const mins = Math.floor(secondsLeft / 60)
-      const secs = secondsLeft % 60
-      const wait = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`
-      return NextResponse.json(
-        { error: `You can post again in ${wait}.` },
-        { status: 429 }
-      )
+  // 5-minute cooldown between new posts per user (global admins are exempt)
+  if (!isGlobalAdmin) {
+    const COOLDOWN_MS = 5 * 60 * 1000
+    const { data: lastPost } = await supabase
+      .from('posts')
+      .select('created_at')
+      .eq('author_id', viewer.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (lastPost) {
+      const elapsed = Date.now() - new Date((lastPost as { created_at: string }).created_at).getTime()
+      if (elapsed < COOLDOWN_MS) {
+        const secondsLeft = Math.ceil((COOLDOWN_MS - elapsed) / 1000)
+        const mins = Math.floor(secondsLeft / 60)
+        const secs = secondsLeft % 60
+        const wait = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`
+        return NextResponse.json(
+          { error: `You can post again in ${wait}.` },
+          { status: 429 }
+        )
+      }
     }
   }
 
@@ -144,8 +148,6 @@ export async function POST(req: NextRequest) {
       'Invalid input.'
     return NextResponse.json({ error: first }, { status: 400 })
   }
-
-  const isGlobalAdmin = viewer.role === 'admin'
 
   const supabaseAny = supabase as any
   let insertPayload: Record<string, unknown>
