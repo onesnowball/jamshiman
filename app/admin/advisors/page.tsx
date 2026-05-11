@@ -31,8 +31,8 @@ export default async function AdminAdvisorsPage() {
       .from('departments')
       .select('*')
       .eq('university_id', university.id)
+      .eq('is_board_category', false)
       .eq('active', true)
-      .order('is_board_category', { ascending: true })  // academic depts first, board categories as fallback
       .order('name'),
   ])
 
