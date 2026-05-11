@@ -43,6 +43,8 @@ export default async function AdvisorsPage({ params }: { params: { school: strin
         <p className="text-sm text-gray-500 mt-1">
           Anonymous reviews from verified {university.name} students — lab members, collaborators, and committee students.
         </p>
+        {/* TEMP DEBUG — remove after diagnosing */}
+        <p className="text-xs text-red-400 mt-1">dbg: uni={university.id} count={advisors.length}</p>
       </div>
       <AdvisorSearch advisors={advisors} school={params.school} />
     </main>
