@@ -90,9 +90,11 @@ export function NavbarClient({
                       onClick={() => {
                         setSwitcherOpen(false)
                         if (path.startsWith('/admin')) {
-                          // Round-trip through the school's boards page so middleware
-                          // sets the last_school cookie, then redirect back to admin.
-                          router.push(`/${sc.slug}/boards?returnTo=admin`)
+                          // Use the set-school endpoint: sets the last_school cookie
+                          // server-side then hard-redirects to /admin. A full page
+                          // navigation is needed so the cookie lands before the admin
+                          // page server component reads it.
+                          window.location.href = `/api/admin/set-school?school=${sc.slug}`
                         } else {
                           router.push(`/${sc.slug}/boards`)
                         }

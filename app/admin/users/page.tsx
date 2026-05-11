@@ -4,7 +4,9 @@ import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer } from '@/lib/server-auth'
 import { getAdminUniversity } from '@/lib/admin-context'
+import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { UserBanButton } from '@/components/admin/UserBanButton'
+import { CampusAdminButton } from '@/components/admin/CampusAdminButton'
 import type { User } from '@/types/database'
 
 export default async function AdminUsersPage() {
@@ -15,7 +17,9 @@ export default async function AdminUsersPage() {
   if (!university) redirect('/admin')
 
   const supabase = createAdminClient()
+  const isGlobalAdmin = viewer.role === 'admin'
 
+  // Fetch all users for this university
   const { data: usersData } = await supabase
     .from('users')
     .select('*')
@@ -23,6 +27,28 @@ export default async function AdminUsersPage() {
     .order('created_at', { ascending: false })
 
   const users = (usersData ?? []) as User[]
+
+  // Fetch campus admins for this university
+  const { data: campusAdminsData } = await (supabase as any)
+    .from('campus_admins')
+    .select('user_id')
+    .eq('university_id', university.id)
+
+  const campusAdminIds = new Set(
+    ((campusAdminsData ?? []) as Array<{ user_id: string }>).map(r => r.user_id)
+  )
+
+  // Real email map for global admin
+  const allUserIds = users.map(u => u.id)
+  const emailMap = isGlobalAdmin ? await getAuthEmailMap(allUserIds) : new Map<string, string>()
+
+  function getDisplayLabel(u: User): string {
+    if (isGlobalAdmin) {
+      const email = emailMap.get(u.id)
+      return email ? toPublicHandle(email) : u.email_hash.slice(0, 12)
+    }
+    return u.email_hash.slice(0, 8) + '…'
+  }
 
   const activeUsers = users.filter(u => !u.is_banned)
   const bannedUsers = users.filter(u => u.is_banned)
@@ -53,24 +79,44 @@ export default async function AdminUsersPage() {
             {activeUsers.length === 0 ? (
               <p className="text-sm text-gray-400 p-5">No active users yet.</p>
             ) : (
-              activeUsers.map(u => (
-                <div key={u.id} className="flex items-center justify-between px-4 py-3 gap-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 font-mono truncate">
-                      {u.email_hash.slice(0, 12)}…
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Joined {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      {u.role === 'admin' && (
-                        <span className="ml-2 text-red-500 font-medium">· Global admin</span>
-                      )}
-                    </p>
+              activeUsers.map(u => {
+                const isCampusAdmin = campusAdminIds.has(u.id)
+                const isGlobal = u.role === 'admin'
+                return (
+                  <div key={u.id} className="flex items-center justify-between px-4 py-3 gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-gray-900 font-mono truncate">
+                          {getDisplayLabel(u)}
+                        </p>
+                        {isGlobal && (
+                          <span className="badge-red text-[10px]">Global admin</span>
+                        )}
+                        {!isGlobal && isCampusAdmin && (
+                          <span className="badge-purple text-[10px]">Campus admin</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Joined {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+
+                    {/* Actions — only global admin can manage admins */}
+                    {u.id !== viewer.id && !isGlobal && (
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isGlobalAdmin && (
+                          <CampusAdminButton
+                            userId={u.id}
+                            universityId={university.id}
+                            isCampusAdmin={isCampusAdmin}
+                          />
+                        )}
+                        <UserBanButton userId={u.id} isBanned={false} />
+                      </div>
+                    )}
                   </div>
-                  {u.id !== viewer.id && u.role !== 'admin' && (
-                    <UserBanButton userId={u.id} isBanned={false} />
-                  )}
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </section>
@@ -85,9 +131,9 @@ export default async function AdminUsersPage() {
             <div className="card overflow-hidden divide-y divide-gray-50">
               {bannedUsers.map(u => (
                 <div key={u.id} className="flex items-center justify-between px-4 py-3 gap-4 bg-red-50/40">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-gray-500 font-mono truncate line-through">
-                      {u.email_hash.slice(0, 12)}…
+                      {getDisplayLabel(u)}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       Joined {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
