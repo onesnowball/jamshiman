@@ -25,3 +25,7 @@ export function domainToSlug(domain: string): string {
   const normalized = domain.trim().toLowerCase()
   return DOMAIN_TO_SLUG[normalized] ?? normalized.split('.')[0]
 }
+
+export function canonicalSchoolSlug(slugOrDomain: string): string {
+  return domainToSlug(slugToDomain(slugOrDomain))
+}

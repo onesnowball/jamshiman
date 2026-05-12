@@ -13,7 +13,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { AppViewer } from '@/lib/server-auth'
-import { domainToSlug, slugToDomain } from '@/lib/school-slugs'
+import { canonicalSchoolSlug, domainToSlug, slugToDomain } from '@/lib/school-slugs'
 
 export type AdminUniversity = { id: string; name: string; domain: string }
 
@@ -41,7 +41,7 @@ export async function getAdminFallbackSlug(viewer: AppViewer): Promise<string | 
   if (viewer.role === 'admin') {
     const lastSchool = cookies().get('last_school')?.value
     if (lastSchool) {
-      const university = await getAdminUniversityBySlug(viewer, lastSchool)
+      const university = await getAdminUniversityBySlug(viewer, canonicalSchoolSlug(lastSchool))
       if (university) return domainToSlug(university.domain)
     }
 
@@ -98,7 +98,7 @@ export async function getAdminUniversity(viewer: AppViewer): Promise<AdminUniver
     const { data } = await supabase
       .from('universities')
       .select('id, name, domain')
-      .eq('domain', slugToDomain(lastSchool))
+      .eq('domain', slugToDomain(canonicalSchoolSlug(lastSchool)))
       .single()
     return (data as AdminUniversity | null)
   }

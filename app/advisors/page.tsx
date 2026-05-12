@@ -4,7 +4,7 @@ import { Navbar } from '@/components/Navbar'
 import { AdvisorSearch } from '@/components/advisors/AdvisorSearch'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
-import { domainToSlug } from '@/lib/school-slugs'
+import { canonicalSchoolSlug, domainToSlug } from '@/lib/school-slugs'
 
 export default async function AdvisorsPage({
   searchParams,
@@ -16,7 +16,7 @@ export default async function AdvisorsPage({
   if (!viewer) redirect('/auth/login')
 
   const lastSchool = cookies().get('last_school')?.value
-  if (lastSchool) redirect(`/${lastSchool}/advisors`)
+  if (lastSchool) redirect(`/${canonicalSchoolSlug(lastSchool)}/advisors`)
 
   const { data: viewerUniversity } = await supabase
     .from('universities')
