@@ -31,12 +31,13 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient()
   const supabaseAny = supabase as any
 
+  // Academic dept only (not board topics). Inactive departments are allowed so
+  // admins can attach advisors before turning a department "visible".
   const { data: department } = await supabase
     .from('departments')
     .select('id, university_id')
     .eq('id', parsed.data.dept_id)
     .eq('is_board_category', false)
-    .eq('active', true)
     .single()
 
   if (!department) {
@@ -110,7 +111,6 @@ export async function PATCH(req: NextRequest) {
     .select('id, university_id')
     .eq('id', parsed.data.dept_id)
     .eq('is_board_category', false)
-    .eq('active', true)
     .single()
 
   if (!department) {

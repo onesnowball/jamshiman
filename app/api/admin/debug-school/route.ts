@@ -65,8 +65,17 @@ export async function GET(req: NextRequest) {
     .select('id, handle')
     .limit(1)
 
+  const deptRows = (depts ?? []) as Array<{ active: boolean; is_board_category: boolean }>
+  const publicDepartmentsTab = deptRows.filter(d => d.active && !d.is_board_category).length
+  const publicAdvisorsTab = (advisors ?? []).filter((a: { active?: boolean }) => a.active).length
+
   return NextResponse.json({
     university: uni,
+    publicStudentTabs: {
+      departmentsTabCount: publicDepartmentsTab,
+      advisorsTabCount: publicAdvisorsTab,
+      note: 'Same filters as /[school]/departments and /[school]/advisors (active only; departments exclude board topics).',
+    },
     departments: { data: depts, error: deptErr, count: depts?.length ?? 0 },
     advisors: {
       data: advisors,

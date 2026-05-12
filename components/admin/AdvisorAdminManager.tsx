@@ -1,12 +1,30 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Loader2, Plus, UserCog } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Advisor, Department } from '@/types/database'
 
 type AdvisorRecord = Advisor & {
   departments: { name: string | null } | null
+}
+
+function defaultDeptId(departments: Department[]) {
+  return departments.find(d => d.active)?.id ?? departments[0]?.id ?? ''
+}
+
+function formatApiError(data: { error?: unknown }): string {
+  const e = data?.error
+  if (typeof e === 'string') return e
+  if (e && typeof e === 'object') {
+    try {
+      return JSON.stringify(e)
+    } catch {
+      return 'Invalid request.'
+    }
+  }
+  return 'Request failed.'
 }
 
 const emptyForm = {
@@ -21,19 +39,29 @@ const emptyForm = {
 
 export function AdvisorAdminManager({
   advisors,
-  departments,  // already filtered to academic depts only by the server page
+  departments,
+  schoolSlug = '',
 }: {
   advisors: AdvisorRecord[]
   departments: Department[]
+  schoolSlug?: string
 }) {
 
   const router = useRouter()
   const [form, setForm] = useState({
     ...emptyForm,
-    dept_id: departments[0]?.id ?? '',
+    dept_id: '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (form.id) return
+    const valid = departments.some(d => d.id === form.dept_id)
+    if (valid) return
+    const next = defaultDeptId(departments)
+    setForm(f => (f.dept_id === next ? f : { ...f, dept_id: next }))
+  }, [departments, form.id, form.dept_id])
 
   const departmentMap = useMemo(
     () => new Map(departments.map(department => [department.id, department.name])),
@@ -59,11 +87,11 @@ export function AdvisorAdminManager({
         body: JSON.stringify(payload),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Could not save advisor.')
+      if (!response.ok) throw new Error(formatApiError(data))
 
       setForm({
         ...emptyForm,
-        dept_id: departments[0]?.id ?? '',
+        dept_id: defaultDeptId(departments),
       })
       router.refresh()
     } catch (err: any) {
@@ -104,7 +132,7 @@ export function AdvisorAdminManager({
         }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Could not update advisor.')
+      if (!response.ok) throw new Error(formatApiError(data))
       router.refresh()
     } catch (err: any) {
       setError(err.message || 'Could not update advisor.')
@@ -127,13 +155,31 @@ export function AdvisorAdminManager({
           value={form.dept_id}
           onChange={event => setForm(current => ({ ...current, dept_id: event.target.value }))}
           className="input"
+          disabled={!departments.length}
         >
           {departments.map(department => (
             <option key={department.id} value={department.id}>
               {department.name}
+              {!department.active ? ' (hidden — enable under Departments)' : ''}
             </option>
           ))}
         </select>
+
+        {departments.length === 0 && schoolSlug && (
+          <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            Add at least one academic department first, then come back here to attach advisors.{' '}
+            <Link href={`/${schoolSlug}/admin/departments`} className="font-medium text-brand-700 underline">
+              Open Departments admin
+            </Link>
+          </p>
+        )}
+
+        {departments.length > 0 && !departments.some(d => d.active) && (
+          <p className="text-xs text-amber-700">
+            Every department is hidden from students. Turn at least one to &quot;Visible&quot; so it appears on the
+            Departments tab; you can still create advisors now.
+          </p>
+        )}
 
         <input
           value={form.name}
@@ -187,7 +233,7 @@ export function AdvisorAdminManager({
           {form.id && (
             <button
               type="button"
-              onClick={() => setForm({ ...emptyForm, dept_id: departments[0]?.id ?? '' })}
+              onClick={() => setForm({ ...emptyForm, dept_id: defaultDeptId(departments) })}
               className="btn-secondary"
             >
               Cancel

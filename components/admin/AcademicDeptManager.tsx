@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, Check, X, Loader2, ToggleLeft, ToggleRight, Pencil, GraduationCap, AlertTriangle, Trash2 } from 'lucide-react'
 import type { Department } from '@/types/database'
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function AcademicDeptManager({ departments: initial, universities, isGlobalAdmin = false }: Props) {
+  const router = useRouter()
   const [depts, setDepts] = useState(initial)
   const [showCreate, setShowCreate] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -58,6 +60,7 @@ export function AcademicDeptManager({ departments: initial, universities, isGlob
     }])
     setShowCreate(false)
     setCreateForm({ name: '', slug: '' })
+    router.refresh()
   }
 
   async function save(id: string) {
@@ -72,6 +75,7 @@ export function AcademicDeptManager({ departments: initial, universities, isGlob
     if (!res.ok) { const d = await res.json(); setError(d.error || 'Failed.'); return }
     setDepts(prev => prev.map(d => d.id === id ? { ...d, name: editForm.name.trim(), slug: editForm.slug.trim() } : d))
     setEditingId(null)
+    router.refresh()
   }
 
   async function deleteDept(id: string) {
@@ -86,6 +90,7 @@ export function AcademicDeptManager({ departments: initial, universities, isGlob
     setConfirmDelete(null)
     if (!res.ok) { const d = await res.json(); setError(d.error || 'Failed.'); return }
     setDepts(prev => prev.filter(d => d.id !== id))
+    router.refresh()
   }
 
   async function toggleActive(dept: typeof initial[0]) {
@@ -100,6 +105,7 @@ export function AcademicDeptManager({ departments: initial, universities, isGlob
     setLoading(null)
     if (!res.ok) { const d = await res.json(); setError(d.error || 'Failed.'); return }
     setDepts(prev => prev.map(d => d.id === dept.id ? { ...d, active: !d.active } : d))
+    router.refresh()
   }
 
   return (

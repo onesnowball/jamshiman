@@ -6,6 +6,8 @@ import { requireAdminUniversity } from '@/lib/admin-context'
 import { AcademicDeptManager } from '@/components/admin/AcademicDeptManager'
 import type { Department } from '@/types/database'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDepartmentsPage({ params }: { params: { school: string } }) {
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
@@ -20,6 +22,7 @@ export default async function AdminDepartmentsPage({ params }: { params: { schoo
     .select('*, universities(name)')
     .eq('university_id', university.id)
     .eq('is_board_category', false)
+    .order('active', { ascending: false })
     .order('name')
 
   const departments = (deptData ?? []) as (Department & { universities: { name: string } | null })[]

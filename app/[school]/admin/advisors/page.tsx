@@ -6,6 +6,8 @@ import { requireAdminUniversity } from '@/lib/admin-context'
 import { AdvisorAdminManager } from '@/components/admin/AdvisorAdminManager'
 import type { Advisor, Department } from '@/types/database'
 
+export const dynamic = 'force-dynamic'
+
 type AdminAdvisor = Advisor & {
   departments: { name: string | null } | null
 }
@@ -30,7 +32,7 @@ export default async function AdminAdvisorsPage({ params }: { params: { school: 
       .select('*')
       .eq('university_id', university.id)
       .eq('is_board_category', false)
-      .eq('active', true)
+      .order('active', { ascending: false })
       .order('name'),
   ])
 
@@ -51,7 +53,7 @@ export default async function AdminAdvisorsPage({ params }: { params: { school: 
           </div>
         </div>
 
-        <AdvisorAdminManager advisors={advisors} departments={departments} />
+        <AdvisorAdminManager advisors={advisors} departments={departments} schoolSlug={params.school} />
       </main>
     </div>
   )
