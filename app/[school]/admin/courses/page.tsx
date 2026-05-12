@@ -1,20 +1,18 @@
 import { redirect } from 'next/navigation'
 import { BookOpen } from 'lucide-react'
-import { Navbar } from '@/components/Navbar'
 import { CourseAdminManager } from '@/components/admin/CourseAdminManager'
 import { getAdminViewer } from '@/lib/server-auth'
-import { getAdminUniversity } from '@/lib/admin-context'
+import { requireAdminUniversity } from '@/lib/admin-context'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { Course, Department } from '@/types/database'
 
 type CourseWithDept = Course & { departments: { name: string } | null }
 
-export default async function AdminCoursesPage() {
+export default async function AdminCoursesPage({ params }: { params: { school: string } }) {
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
 
-  const university = await getAdminUniversity(viewer)
-  if (!university) redirect('/admin')
+  const university = await requireAdminUniversity(viewer, params.school)
 
   const supabase = createAdminClient()
   const supabaseAny = supabase as any
@@ -39,7 +37,6 @@ export default async function AdminCoursesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center gap-3">
           <BookOpen className="w-5 h-5 text-brand-600" />

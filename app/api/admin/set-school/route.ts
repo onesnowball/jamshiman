@@ -6,9 +6,8 @@ import { domainToSlug, slugToDomain } from '@/lib/school-slugs'
 /**
  * GET /api/admin/set-school?school=northwestern
  *
- * Sets the `last_school` cookie (same as middleware does when visiting a
- * school page) then redirects to /admin. Used by the campus switcher so that
- * admins don't need a full board-page round-trip to switch context.
+ * Legacy helper: sets the `last_school` cookie, then redirects to the
+ * school-scoped admin page.
  */
 export async function GET(req: NextRequest) {
   const viewer = await getAdminViewer()
@@ -33,8 +32,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/admin', req.url))
   }
 
-  const response = NextResponse.redirect(new URL('/admin', req.url))
-  response.cookies.set('last_school', domainToSlug((university as { domain: string }).domain), {
+  const schoolSlug = domainToSlug((university as { domain: string }).domain)
+  const response = NextResponse.redirect(new URL(`/${schoolSlug}/admin`, req.url))
+  response.cookies.set('last_school', schoolSlug, {
     path: '/',
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: 'lax',

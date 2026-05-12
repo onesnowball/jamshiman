@@ -1,22 +1,20 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Users, ShieldOff, Shield, AlertTriangle } from 'lucide-react'
-import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer } from '@/lib/server-auth'
-import { getAdminUniversity } from '@/lib/admin-context'
+import { requireAdminUniversity } from '@/lib/admin-context'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { UserBanButton } from '@/components/admin/UserBanButton'
 import { CampusAdminButton } from '@/components/admin/CampusAdminButton'
 import { SuspensionReviewButtons } from '@/components/admin/SuspensionReviewButtons'
 import type { User } from '@/types/database'
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({ params }: { params: { school: string } }) {
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
 
-  const university = await getAdminUniversity(viewer)
-  if (!university) redirect('/admin')
+  const university = await requireAdminUniversity(viewer, params.school)
 
   const supabase = createAdminClient()
   const isGlobalAdmin = viewer.role === 'admin'
@@ -76,7 +74,6 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <main className="max-w-4xl mx-auto px-4 py-8 page-enter space-y-6">
 
         <div className="flex items-center gap-3">
@@ -110,7 +107,7 @@ export default async function AdminUsersPage() {
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Link
-                            href={`/admin/users/${req.target_user_id}`}
+                            href={`/${params.school}/admin/users/${req.target_user_id}`}
                             className="text-sm font-semibold text-gray-900 font-mono hover:text-brand-700 transition-colors"
                           >
                             {targetLabel}
@@ -154,7 +151,7 @@ export default async function AdminUsersPage() {
                 const isGlobal = u.role === 'admin'
                 return (
                   <div key={u.id} className="flex items-center justify-between px-4 py-3 gap-4 hover:bg-gray-50/80 transition-colors group">
-                    <Link href={`/admin/users/${u.id}`} className="min-w-0 flex-1 block">
+                    <Link href={`/${params.school}/admin/users/${u.id}`} className="min-w-0 flex-1 block">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium text-gray-900 font-mono truncate group-hover:text-brand-700 transition-colors">
                           {getDisplayLabel(u.id)}
@@ -196,7 +193,7 @@ export default async function AdminUsersPage() {
               {bannedUsers.map(u => (
                 <Link
                   key={u.id}
-                  href={`/admin/users/${u.id}`}
+                  href={`/${params.school}/admin/users/${u.id}`}
                   className="flex items-center justify-between px-4 py-3 gap-4 bg-red-50/40 hover:bg-red-50 transition-colors group"
                 >
                   <div className="min-w-0 flex-1">

@@ -47,6 +47,8 @@ export function NavbarClient({
 
   const homeHref = s ? `/${s}` : '/'
   const currentSchool = schools.find(sc => sc.slug === s)
+  const schoolAdminPrefix = s ? `/${s}/admin` : '/admin'
+  const isAdminPath = path.startsWith('/admin') || (s ? path.startsWith(schoolAdminPrefix) : false)
 
   function shortName(name: string) {
     return name.replace('University of ', '').replace(' University', '')
@@ -90,12 +92,11 @@ export function NavbarClient({
                       key={sc.slug}
                       onClick={() => {
                         setSwitcherOpen(false)
-                        if (path.startsWith('/admin')) {
-                          // Use the set-school endpoint: sets the last_school cookie
-                          // server-side then hard-redirects to /admin. A full page
-                          // navigation is needed so the cookie lands before the admin
-                          // page server component reads it.
-                          window.location.href = `/api/admin/set-school?school=${sc.slug}`
+                        if (isAdminPath) {
+                          const adminRest = s && path.startsWith(schoolAdminPrefix)
+                            ? path.slice(schoolAdminPrefix.length)
+                            : ''
+                          router.push(`/${sc.slug}/admin${adminRest}`)
                         } else {
                           router.push(`/${sc.slug}/boards`)
                         }
@@ -142,10 +143,10 @@ export function NavbarClient({
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {isAdmin && (
             <Link
-              href="/admin"
+              href={s ? `/${s}/admin` : '/admin'}
               className={clsx(
                 'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm transition-all',
-                path.startsWith('/admin')
+                isAdminPath
                   ? 'bg-red-50 text-red-700 font-semibold'
                   : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
               )}

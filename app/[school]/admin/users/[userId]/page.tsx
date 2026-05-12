@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, FileText, MessageSquare, Shield, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
-import { Navbar } from '@/components/Navbar'
+import { ChevronLeft, FileText, MessageSquare, Shield, AlertTriangle } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer, canAdminUniversity } from '@/lib/server-auth'
-import { getAdminUniversity } from '@/lib/admin-context'
+import { requireAdminUniversity } from '@/lib/admin-context'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { UserBanButton } from '@/components/admin/UserBanButton'
 import { CampusAdminButton } from '@/components/admin/CampusAdminButton'
@@ -14,12 +13,11 @@ import type { User } from '@/types/database'
 
 export default async function AdminUserDetailPage({
   params,
-}: { params: { userId: string } }) {
+}: { params: { school: string; userId: string } }) {
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
 
-  const university = await getAdminUniversity(viewer)
-  if (!university) redirect('/admin')
+  const university = await requireAdminUniversity(viewer, params.school)
 
   const supabase = createAdminClient()
   const isGlobalAdmin = viewer.role === 'admin'
@@ -33,7 +31,7 @@ export default async function AdminUserDetailPage({
     .single()
 
   const user = userData as User | null
-  if (!user || !canAdminUniversity(viewer, user.university_id)) redirect('/admin/users')
+  if (!user || !canAdminUniversity(viewer, user.university_id)) redirect(`/${params.school}/admin/users`)
 
   const emailMap = isGlobalAdmin ? await getAuthEmailMap([user.id]) : new Map<string, string>()
   const handle = isGlobalAdmin
@@ -95,7 +93,7 @@ export default async function AdminUserDetailPage({
     posts: { title: string; departments: { slug: string } | null } | null
   }>
 
-  const schoolSlug = university.domain.replace('.edu', '')
+  const schoolSlug = params.school
 
   function statusBadge(status: string) {
     if (status === 'active') return null
@@ -108,12 +106,11 @@ export default async function AdminUserDetailPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <main className="max-w-4xl mx-auto px-4 py-8 page-enter space-y-6">
 
         {/* Header */}
         <div className="flex items-start gap-3">
-          <Link href="/admin/users" className="text-gray-400 hover:text-gray-600 transition-colors mt-1">
+          <Link href={`/${params.school}/admin/users`} className="text-gray-400 hover:text-gray-600 transition-colors mt-1">
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <div className="flex-1 min-w-0">

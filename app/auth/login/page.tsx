@@ -163,7 +163,8 @@ function LoginPageContent() {
       const res = await fetch('/api/dev-login', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Dev login failed.')
-      window.location.href = '/admin'
+      const slug = schoolParam ? domainToSlug(displayDomain) : 'umich'
+      window.location.href = `/${slug}/admin`
     } catch (err: any) {
       setStatus('error')
       setError(err.message || 'Dev login failed.')

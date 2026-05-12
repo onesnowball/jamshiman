@@ -1,12 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Navbar } from '@/components/Navbar'
 import { FlagActions } from './FlagActions'
 import { PendingDeleteActions } from './PendingDeleteActions'
 import { ArchiveActions } from './ArchiveActions'
 import { Shield, AlertTriangle, Trash2, Archive, Users } from 'lucide-react'
 import { getAdminViewer } from '@/lib/server-auth'
-import { getAdminUniversity } from '@/lib/admin-context'
+import { requireAdminUniversity } from '@/lib/admin-context'
 import type { FlagContentType } from '@/lib/content'
 
 type FlagPreview = { headline: string; body: string }
@@ -63,13 +62,12 @@ type FlagGroup = {
   preview: FlagPreview
 }
 
-export default async function AdminFlagsPage() {
+export default async function AdminFlagsPage({ params }: { params: { school: string } }) {
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
   const supabase = createAdminClient()
 
-  const university = await getAdminUniversity(viewer)
-  if (!university) redirect('/admin')
+  const university = await requireAdminUniversity(viewer, params.school)
 
   const uniId = university.id
 
@@ -177,7 +175,6 @@ export default async function AdminFlagsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-10">
 
         <div className="flex items-center gap-3">

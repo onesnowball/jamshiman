@@ -26,7 +26,7 @@ export default async function BoardsPage({
   // request, now redirect to the target page so admin sees the new context.
   if (searchParams?.returnTo === 'admin') {
     const { redirect } = await import('next/navigation')
-    redirect('/admin')
+    redirect(`/${params.school}/admin`)
   }
 
   const { data: deptData } = await supabase
@@ -45,7 +45,6 @@ export default async function BoardsPage({
   if (generalIdx > 0) boardFirst.unshift(...boardFirst.splice(generalIdx, 1))
   const departments = [...boardFirst, ...academic]
   const boardFilterDepts = boardFirst
-  const academicFilterDepts = academic
   const deptMap = new Map(departments.map(d => [d.id, d]))
 
   const activeDept = searchParams?.dept
@@ -95,52 +94,29 @@ export default async function BoardsPage({
         <p className="text-xs text-gray-400 mt-0.5 max-w-sm">Labs, advisors, funding, courses, housing, and department life — discussed by verified {university.name} students.</p>
       </div>
 
-      {/* Board and department channels */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-2">
+      {/* Board topic filters */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={`/${params.school}/boards`}
+          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            !activeDept ? 'bg-brand-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'
+          }`}
+        >
+          All
+        </Link>
+        {boardFilterDepts.map(d => (
           <Link
-            href={`/${params.school}/boards`}
+            key={d.id}
+            href={`/${params.school}/boards?dept=${d.slug}`}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-              !activeDept ? 'bg-brand-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'
+              activeDept?.id === d.id
+                ? 'bg-brand-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'
             }`}
           >
-            All
+            {d.name}
           </Link>
-          {boardFilterDepts.map(d => (
-            <Link
-              key={d.id}
-              href={`/${params.school}/boards?dept=${d.slug}`}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                activeDept?.id === d.id
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'
-              }`}
-            >
-              {d.name}
-            </Link>
-          ))}
-        </div>
-
-        {academicFilterDepts.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Departments</p>
-            <div className="flex flex-wrap gap-2">
-              {academicFilterDepts.map(d => (
-                <Link
-                  key={d.id}
-                  href={`/${params.school}/boards?dept=${d.slug}`}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    activeDept?.id === d.id
-                      ? 'bg-brand-600 text-white'
-                      : 'bg-white border border-gray-200 text-gray-600 hover:border-brand-300'
-                  }`}
-                >
-                  {d.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        ))}
       </div>
 
       {/* Empty state */}

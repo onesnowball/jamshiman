@@ -1,17 +1,18 @@
 import { redirect } from 'next/navigation'
 import { Shield } from 'lucide-react'
-import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer } from '@/lib/server-auth'
+import { requireAdminUniversity } from '@/lib/admin-context'
 import { getAuthEmailMap } from '@/lib/admin-users'
 import { AccessManager } from '@/components/admin/AccessManager'
 import type { User } from '@/types/database'
 
 type AccessRecord = User & { email: string; campusAdminUniversityIds: string[] }
 
-export default async function AdminAccessPage() {
+export default async function AdminAccessPage({ params }: { params: { school: string } }) {
   const viewer = await getAdminViewer()
   if (!viewer || viewer.role !== 'admin') redirect('/auth/login')
+  await requireAdminUniversity(viewer, params.school)
 
   const supabase = createAdminClient()
   const db = supabase as any
@@ -47,7 +48,6 @@ export default async function AdminAccessPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8 page-enter space-y-6">
         <div className="flex items-center gap-3">
           <Shield className="w-5 h-5 text-brand-600" />
