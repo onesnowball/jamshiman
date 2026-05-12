@@ -93,6 +93,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
       <div>
         <Link
           href={`/${params.school}/advisors`}
+          prefetch={false}
           className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-400 text-sm hover:border-brand-300 hover:shadow-sm transition-all"
         >
           <Search className="w-4 h-4 flex-shrink-0" />
@@ -108,6 +109,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
             <Link
               key={href}
               href={href}
+              prefetch={false}
               className="card p-4 hover:border-brand-200 hover:shadow-md transition-all group"
             >
               <div className="flex items-center gap-2 mb-1">
@@ -125,7 +127,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-700">Departments</h2>
-            <Link href={`/${params.school}/departments`} className="text-xs text-brand-600 hover:underline">
+            <Link href={`/${params.school}/departments`} prefetch={false} className="text-xs text-brand-600 hover:underline">
               View all →
             </Link>
           </div>
@@ -134,6 +136,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
               <Link
                 key={dept.id}
                 href={`/${params.school}/departments/${dept.slug}`}
+                prefetch={false}
                 className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:border-brand-300 hover:text-brand-700 transition-colors"
               >
                 {dept.name}
@@ -150,7 +153,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
             <MessageSquare className="w-4 h-4 text-gray-400" />
             Recent board posts
           </h2>
-          <Link href={`/${params.school}/boards`} className="text-xs text-brand-600 hover:underline">
+          <Link href={`/${params.school}/boards`} prefetch={false} className="text-xs text-brand-600 hover:underline">
             View all →
           </Link>
         </div>
@@ -158,7 +161,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
         {!recentPosts.length ? (
           <div className="card p-6 text-center text-gray-400">
             <p className="text-sm">No posts yet. Start the first conversation.</p>
-            <Link href={`/${params.school}/boards/new`} className="btn-primary text-xs py-1.5 inline-flex mt-3">
+            <Link href={`/${params.school}/boards/new`} prefetch={false} className="btn-primary text-xs py-1.5 inline-flex mt-3">
               <Plus className="w-3.5 h-3.5" /> Post anonymously
             </Link>
           </div>
@@ -168,6 +171,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
               <Link
                 key={post.id}
                 href={`/${params.school}/boards`}
+                prefetch={false}
                 className="card p-3 hover:border-brand-200 hover:shadow-sm transition-all group block"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -196,7 +200,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
               <GraduationCap className="w-4 h-4 text-gray-400" />
               Recent advisor reviews
             </h2>
-            <Link href={`/${params.school}/advisors`} className="text-xs text-brand-600 hover:underline">
+            <Link href={`/${params.school}/advisors`} prefetch={false} className="text-xs text-brand-600 hover:underline">
               View all →
             </Link>
           </div>
@@ -219,10 +223,10 @@ export default async function SchoolHomePage({ params }: { params: { school: str
           Leave an anonymous review for an advisor, lab, or course. Your experience helps others make better decisions.
         </p>
         <div className="flex gap-2 pt-1">
-          <Link href={`/${params.school}/advisors`} className="btn-primary text-xs py-1.5">
+          <Link href={`/${params.school}/advisors`} prefetch={false} className="btn-primary text-xs py-1.5">
             Review an advisor
           </Link>
-          <Link href={`/${params.school}/courses`} className="btn-secondary text-xs py-1.5">
+          <Link href={`/${params.school}/courses`} prefetch={false} className="btn-secondary text-xs py-1.5">
             Review a course
           </Link>
         </div>

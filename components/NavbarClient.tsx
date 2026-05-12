@@ -125,6 +125,7 @@ export function NavbarClient({
               <Link
                 key={href}
                 href={href}
+                prefetch={false}
                 className={clsx(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all duration-150',
                   active
@@ -144,6 +145,7 @@ export function NavbarClient({
           {isAdmin && (
             <Link
               href={s ? `/${s}/admin` : '/admin'}
+              prefetch={false}
               className={clsx(
                 'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm transition-all',
                 isAdminPath
@@ -157,6 +159,7 @@ export function NavbarClient({
           )}
           <Link
             href="/profile"
+            prefetch={false}
             className={clsx(
               'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm transition-all',
               path.startsWith('/profile')
@@ -170,6 +173,7 @@ export function NavbarClient({
           {s && (
             <Link
               href={`/${s}/boards/new`}
+              prefetch={false}
               className="flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition-all shadow-[0_1px_2px_0_rgb(15,61,212,0.25)] hover:shadow-[0_2px_6px_0_rgb(15,61,212,0.3)]"
             >
               <Plus className="w-4 h-4" />
