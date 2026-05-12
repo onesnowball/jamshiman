@@ -1,9 +1,8 @@
 /**
- * GET /api/admin/debug-school?school=illinois
+ * GET /api/admin/debug-school?school=uiuc
  *
- * Admin-only diagnostic: shows what advisors and courses are in the DB for a
- * given school slug, plus the resolved university row and migration state.
- * Remove or gate this behind an env flag once the issue is diagnosed.
+ * Admin-only diagnostic: shows departments and advisors (including inactive)
+ * for the resolved university, plus lightweight migration column checks.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
