@@ -8,12 +8,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer } from '@/lib/server-auth'
+import { slugToDomain } from '@/lib/school-slugs'
 
 export async function GET(req: NextRequest) {
   const viewer = await getAdminViewer()
   if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const school = req.nextUrl.searchParams.get('school') ?? 'illinois'
+  const school = req.nextUrl.searchParams.get('school') ?? 'uiuc'
+  const domain = slugToDomain(school)
   const supabase = createAdminClient()
   const supabaseAny = supabase as any
 
@@ -21,13 +23,13 @@ export async function GET(req: NextRequest) {
   const { data: uniRaw, error: uniErr } = await supabaseAny
     .from('universities')
     .select('id, name, domain, active')
-    .eq('domain', `${school}.edu`)
+    .eq('domain', domain)
     .single()
 
   const uni = uniRaw as { id: string; name: string; domain: string; active: boolean } | null
 
   if (!uni) {
-    return NextResponse.json({ error: `No university found for domain ${school}.edu`, uniErr })
+    return NextResponse.json({ error: `No university found for domain ${domain}`, uniErr })
   }
 
   // 2. Departments

@@ -1,8 +1,10 @@
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import { AdvisorSearch } from '@/components/advisors/AdvisorSearch'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
+import { domainToSlug } from '@/lib/school-slugs'
 
 export default async function AdvisorsPage({
   searchParams,
@@ -11,6 +13,18 @@ export default async function AdvisorsPage({
 }) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
+  if (!viewer) redirect('/auth/login')
+
+  const lastSchool = cookies().get('last_school')?.value
+  if (lastSchool) redirect(`/${lastSchool}/advisors`)
+
+  const { data: viewerUniversity } = await supabase
+    .from('universities')
+    .select('domain')
+    .eq('id', viewer.university_id)
+    .single()
+  if (viewerUniversity) redirect(`/${domainToSlug((viewerUniversity as { domain: string }).domain)}/advisors`)
+
   const isGlobalAdmin = viewer?.role === 'admin'
 
   let scopedUniversityId: string | null = null

@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { MessageSquare, ThumbsUp, Plus } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
+import { domainToSlug } from '@/lib/school-slugs'
 import type { Department, Post } from '@/types/database'
 
 type FeedPost = Post & { commentCount: number; authorLabel: string; deptName: string; upvoteCount: number }
@@ -17,6 +19,18 @@ export default async function BoardsPage({
 }) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
+  if (!viewer) redirect('/auth/login')
+
+  const lastSchool = cookies().get('last_school')?.value
+  if (lastSchool) redirect(`/${lastSchool}/boards`)
+
+  const { data: viewerUniversity } = await supabase
+    .from('universities')
+    .select('domain')
+    .eq('id', viewer.university_id)
+    .single()
+  if (viewerUniversity) redirect(`/${domainToSlug((viewerUniversity as { domain: string }).domain)}/boards`)
+
   const isGlobalAdmin = viewer?.role === 'admin'
 
   // Global admins can scope to a specific university via cookie (set at login) or ?uni= param

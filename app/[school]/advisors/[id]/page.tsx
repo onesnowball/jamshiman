@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
-import { Navbar } from '@/components/Navbar'
+import { getUniversityBySlug } from '@/lib/school'
 
 export const dynamic = 'force-dynamic'
 import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
@@ -46,9 +46,11 @@ const RELATIONSHIP_LABEL: Record<string, string> = {
 
 export default async function AdvisorPage({ params }: { params: { school: string; id: string } }) {
   const supabase = createAdminClient()
+  const university = await getUniversityBySlug(params.school)
+  if (!university) notFound()
 
   const [{ data: advisorData }, { data: statsData }, { data: reviewsData }] = await Promise.all([
-    supabase.from('advisors').select('*, departments(name)').eq('id', params.id).single(),
+    supabase.from('advisors').select('*, departments(name)').eq('id', params.id).eq('university_id', university.id).single(),
     supabase.from('advisor_aggregates').select('*').eq('advisor_id', params.id).single(),
     supabase.from('advisor_reviews')
       .select('id, degree_type, ratings, anonymized_text, created_at, is_lab_member')

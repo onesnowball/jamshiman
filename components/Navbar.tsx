@@ -3,6 +3,7 @@ import { getOptionalViewer } from '@/lib/server-auth'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NavbarClient } from './NavbarClient'
 import { SuspensionBanner } from './SuspensionBanner'
+import { domainToSlug } from '@/lib/school-slugs'
 
 export async function Navbar({ school }: { school?: string } = {}) {
   const viewer = await getOptionalViewer()
@@ -29,7 +30,7 @@ export async function Navbar({ school }: { school?: string } = {}) {
       .select('domain')
       .eq('id', viewer.university_id)
       .single()
-    if (data) resolvedSchool = (data as { domain: string }).domain.split('.')[0]
+    if (data) resolvedSchool = domainToSlug((data as { domain: string }).domain)
   }
 
   // For global admins, fetch all active universities so they can switch campuses.
@@ -43,7 +44,7 @@ export async function Navbar({ school }: { school?: string } = {}) {
       .order('name')
     schools = ((data ?? []) as { name: string; domain: string }[]).map(u => ({
       name: u.name,
-      slug: u.domain.split('.')[0],
+      slug: domainToSlug(u.domain),
     }))
   }
 

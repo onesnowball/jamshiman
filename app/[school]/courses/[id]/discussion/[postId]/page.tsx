@@ -6,6 +6,7 @@ import { CommentForm } from '@/components/forms/CommentForm'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { createAdminClient } from '@/lib/supabase/server'
+import { getUniversityBySlug } from '@/lib/school'
 import type { Comment, Course, Post } from '@/types/database'
 
 type CourseWithDepartment = Course & { departments: { name: string | null } | null }
@@ -19,10 +20,12 @@ export default async function CourseDiscussionPostPage({
 }) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
+  const university = await getUniversityBySlug(params.school)
+  if (!university) notFound()
 
   const [{ data: courseData }, { data: postData }] = await Promise.all([
-    supabase.from('courses').select('*, departments(name)').eq('id', params.id).single(),
-    supabase.from('posts').select('*').eq('id', params.postId).eq('course_id', params.id).eq('board_type', 'course').eq('status', 'active').single(),
+    supabase.from('courses').select('*, departments(name)').eq('id', params.id).eq('university_id', university.id).single(),
+    supabase.from('posts').select('*').eq('id', params.postId).eq('course_id', params.id).eq('board_type', 'course').eq('university_id', university.id).eq('status', 'active').single(),
   ])
 
   const course = courseData as CourseWithDepartment | null

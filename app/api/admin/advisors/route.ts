@@ -35,10 +35,12 @@ export async function POST(req: NextRequest) {
     .from('departments')
     .select('id, university_id')
     .eq('id', parsed.data.dept_id)
+    .eq('is_board_category', false)
+    .eq('active', true)
     .single()
 
   if (!department) {
-    return NextResponse.json({ error: 'Department not found.' }, { status: 404 })
+    return NextResponse.json({ error: 'Academic department not found.' }, { status: 404 })
   }
 
   if (!canAdminUniversity(viewer, (department as { university_id: string }).university_id)) {
@@ -88,14 +90,31 @@ export async function PATCH(req: NextRequest) {
 
   const supabase = createAdminClient()
   const supabaseAny = supabase as any
+
+  const { data: existingAdvisor } = await supabase
+    .from('advisors')
+    .select('university_id')
+    .eq('id', parsed.data.id)
+    .single()
+
+  if (!existingAdvisor) {
+    return NextResponse.json({ error: 'Advisor not found.' }, { status: 404 })
+  }
+
+  if (!canAdminUniversity(viewer, (existingAdvisor as { university_id: string }).university_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { data: department } = await supabase
     .from('departments')
     .select('id, university_id')
     .eq('id', parsed.data.dept_id)
+    .eq('is_board_category', false)
+    .eq('active', true)
     .single()
 
   if (!department) {
-    return NextResponse.json({ error: 'Department not found.' }, { status: 404 })
+    return NextResponse.json({ error: 'Academic department not found.' }, { status: 404 })
   }
 
   if (!canAdminUniversity(viewer, (department as { university_id: string }).university_id)) {

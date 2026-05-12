@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getActionClient } from '@/lib/server-auth'
 import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
+import { domainToSlug } from '@/lib/school-slugs'
 
 const PostSchema = z.object({
   dept_id: z.string().uuid().optional(),
@@ -172,7 +173,7 @@ export async function POST(req: NextRequest) {
 
     const courseUniversityId = (course as { university_id: string }).university_id
     const { data: uniData } = await supabase.from('universities').select('domain').eq('id', courseUniversityId).single()
-    const schoolSlug = uniData ? (uniData as { domain: string }).domain.split('.')[0] : null
+    const schoolSlug = uniData ? domainToSlug((uniData as { domain: string }).domain) : null
     if (!schoolSlug) return NextResponse.json({ error: 'Could not determine university.' }, { status: 400 })
 
     insertPayload = {
@@ -206,7 +207,7 @@ export async function POST(req: NextRequest) {
 
     const deptUniversityId = (department as { university_id: string }).university_id
     const { data: uniData } = await supabase.from('universities').select('domain').eq('id', deptUniversityId).single()
-    const schoolSlug = uniData ? (uniData as { domain: string }).domain.split('.')[0] : null
+    const schoolSlug = uniData ? domainToSlug((uniData as { domain: string }).domain) : null
     if (!schoolSlug) return NextResponse.json({ error: 'Could not determine university.' }, { status: 400 })
 
     insertPayload = {

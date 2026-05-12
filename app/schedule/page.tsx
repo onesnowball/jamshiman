@@ -3,6 +3,7 @@ import { Navbar } from '@/components/Navbar'
 import { ScheduleBuilder } from '@/components/schedule/ScheduleBuilder'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
+import { domainToSlug } from '@/lib/school-slugs'
 import type { Course, Schedule, ScheduleCourse } from '@/types/database'
 
 type ScheduleBlockRow = ScheduleCourse & {
@@ -22,6 +23,12 @@ export default async function SchedulePage({
   if (!viewer) redirect('/auth/login')
 
   const supabase = viewer.isDevBypass ? createAdminClient() : createClient()
+  const { data: viewerUniversity } = await createAdminClient()
+    .from('universities')
+    .select('domain')
+    .eq('id', viewer.university_id)
+    .single()
+  if (viewerUniversity) redirect(`/${domainToSlug((viewerUniversity as { domain: string }).domain)}/schedule`)
 
   const [{ data: schedulesData }, { data: coursesData }] = await Promise.all([
     supabase

@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 import { Pin } from 'lucide-react'
-import { getUniversityBySlug } from '@/lib/school'
+import { getUniversityBySlug, slugToDomain } from '@/lib/school'
 import { BoardPostForm } from '@/components/forms/BoardPostForm'
 import type { Department, Post } from '@/types/database'
 
@@ -77,7 +77,7 @@ export default async function DepartmentBoardPage({
             <p className="text-sm text-gray-500 mt-1">
               Reading is open, but writing is limited to verified {university.name} users.
             </p>
-            <Link href={`/auth/login?school=${params.school}.edu`} className="btn-secondary mt-4">Sign in</Link>
+            <Link href={`/auth/login?school=${slugToDomain(params.school)}`} className="btn-secondary mt-4">Sign in</Link>
           </div>
         </div>
       )}

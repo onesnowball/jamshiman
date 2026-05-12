@@ -48,15 +48,16 @@ export default async function CoursePage({
 }) {
   const supabase = createAdminClient()
   const activeTab = searchParams?.tab === 'discussion' ? 'discussion' : 'reviews'
+  const university = await getUniversityBySlug(params.school)
+  if (!university) notFound()
 
-  const [{ data: courseData }, { data: reviewsData }, university] = await Promise.all([
-    supabase.from('courses').select('*, departments(name)').eq('id', params.id).single(),
+  const [{ data: courseData }, { data: reviewsData }] = await Promise.all([
+    supabase.from('courses').select('*, departments(name)').eq('id', params.id).eq('university_id', university.id).single(),
     supabase.from('course_reviews')
       .select('id, semester, degree_type, ratings, anonymized_text, created_at')
       .eq('course_id', params.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false }),
-    getUniversityBySlug(params.school),
   ])
 
   const course = courseData as CoursePageCourse | null
@@ -68,6 +69,7 @@ export default async function CoursePage({
     .select('*', { count: 'exact', head: true })
     .eq('course_id', params.id)
     .eq('board_type', 'course')
+    .eq('university_id', university.id)
     .eq('status', 'active')
 
   const averages = reviews.length > 0 ? averageRatings(reviews) : null

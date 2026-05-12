@@ -2,12 +2,12 @@ import { redirect } from 'next/navigation'
 import { NewPostForm } from '@/components/boards/NewPostForm'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
-import { getUniversityBySlug, domainToSlug } from '@/lib/school'
+import { getUniversityBySlug, domainToSlug, slugToDomain } from '@/lib/school'
 import type { Department } from '@/types/database'
 
 export default async function NewPostPage({ params }: { params: { school: string } }) {
   const viewer = await getOptionalViewer()
-  if (!viewer) redirect(`/auth/login?school=${params.school}.edu`)
+  if (!viewer) redirect(`/auth/login?school=${slugToDomain(params.school)}`)
 
   const university = await getUniversityBySlug(params.school)
   if (!university) redirect('/')

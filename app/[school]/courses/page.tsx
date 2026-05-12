@@ -19,7 +19,7 @@ export default async function CoursesPage({ params }: { params: { school: string
 
   const supabase = createAdminClient()
 
-  const [{ data: coursesData }, { data: deptData }, { data: allReviewsData }, { data: allPostsData }] = await Promise.all([
+  const [{ data: coursesData }, { data: deptData }, { data: allPostsData }] = await Promise.all([
     (supabase as any)
       .from('courses')
       .select('*')
@@ -30,11 +30,6 @@ export default async function CoursesPage({ params }: { params: { school: string
       .from('departments')
       .select('id, name')
       .eq('university_id', university.id),
-    // Batch fetch all course reviews in one query instead of N queries
-    supabase
-      .from('course_reviews')
-      .select('course_id, ratings')
-      .eq('status', 'active'),
     // Batch fetch all discussion post counts
     supabase
       .from('posts')
@@ -52,6 +47,15 @@ export default async function CoursesPage({ params }: { params: { school: string
     ...c,
     departments: { name: deptMap.get(c.dept_id) ?? null },
   })) as (Course & { departments: { name: string | null } | null })[]
+
+  const courseIds = courses.map(course => course.id)
+  const { data: allReviewsData } = courseIds.length > 0
+    ? await supabase
+        .from('course_reviews')
+        .select('course_id, ratings')
+        .eq('status', 'active')
+        .in('course_id', courseIds)
+    : { data: [] }
 
   // Compute review stats per course from batch result
   const reviewStatsMap = new Map<string, { count: number; totals: CourseRatings }>()

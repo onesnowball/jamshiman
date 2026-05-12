@@ -46,7 +46,6 @@ export default async function DepartmentPage({
     { data: postsData },
     { data: boardTopicsData },
     { data: aggregatesData },
-    { data: courseReviewsData },
   ] = await Promise.all([
     (supabase as any)
       .from('advisors')
@@ -78,10 +77,6 @@ export default async function DepartmentPage({
     supabase
       .from('advisor_aggregates')
       .select('advisor_id, review_count, avg_overall'),
-    supabase
-      .from('course_reviews')
-      .select('course_id, ratings')
-      .eq('status', 'active'),
   ])
 
   const advisors = (advisorsData ?? []) as {
@@ -95,6 +90,15 @@ export default async function DepartmentPage({
   }[]
 
   const boardTopics = (boardTopicsData ?? []) as { id: string; name: string; slug: string }[]
+
+  const courseIds = courses.map(course => course.id)
+  const { data: courseReviewsData } = courseIds.length > 0
+    ? await supabase
+        .from('course_reviews')
+        .select('course_id, ratings')
+        .eq('status', 'active')
+        .in('course_id', courseIds)
+    : { data: [] }
 
   // Build advisor aggregate map
   const aggMap = new Map(

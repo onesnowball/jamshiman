@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Trash2, Loader2, MessageSquare } from 'lucide-react'
+import { domainToSlug } from '@/lib/school-slugs'
 
 type ProfilePost = {
   id: string
@@ -70,7 +71,7 @@ export function ProfileActivity({
   return (
     <div className="space-y-3">
       {posts.map(post => {
-        const school = post.universities?.domain?.split('.')[0]
+        const school = post.universities?.domain ? domainToSlug(post.universities.domain) : null
         const href = school && post.departments?.slug
           ? `/${school}/boards/${post.departments.slug}/${post.id}`
           : '#'

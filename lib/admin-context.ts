@@ -12,6 +12,7 @@
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { AppViewer } from '@/lib/server-auth'
+import { slugToDomain } from '@/lib/school-slugs'
 
 export type AdminUniversity = { id: string; name: string; domain: string }
 
@@ -25,7 +26,7 @@ export async function getAdminUniversity(viewer: AppViewer): Promise<AdminUniver
     const { data } = await supabase
       .from('universities')
       .select('id, name, domain')
-      .eq('domain', `${lastSchool}.edu`)
+      .eq('domain', slugToDomain(lastSchool))
       .single()
     return (data as AdminUniversity | null)
   }

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Search, GraduationCap, BookOpen, MessageSquare, Layers, ArrowRight, Plus } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
-import { getUniversityBySlug } from '@/lib/school'
+import { getUniversityBySlug, slugToDomain } from '@/lib/school'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 import type { Post } from '@/types/database'
@@ -28,7 +28,7 @@ export default async function SchoolHomePage({ params }: { params: { school: str
   if (!university) notFound()
 
   // Unauthenticated visitors → redirect to login
-  if (!viewer) redirect(`/auth/login?school=${params.school}.edu`)
+  if (!viewer) redirect(`/auth/login?school=${slugToDomain(params.school)}`)
 
   const supabase = createAdminClient()
 
@@ -50,7 +50,8 @@ export default async function SchoolHomePage({ params }: { params: { school: str
       .limit(6),
     (supabase as any)
       .from('advisor_reviews')
-      .select('id, advisor_id, anonymized_text, created_at, advisors(name)')
+      .select('id, advisor_id, anonymized_text, created_at, advisors!inner(name, university_id)')
+      .eq('advisors.university_id', university.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(3),

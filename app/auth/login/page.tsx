@@ -10,6 +10,7 @@ import {
   isAllowedSchoolEmail,
   normalizeEmail,
 } from '@/lib/auth'
+import { domainToSlug, slugToDomain } from '@/lib/school-slugs'
 
 function LoginPageContent() {
   const [email, setEmail] = useState('')
@@ -29,12 +30,12 @@ function LoginPageContent() {
   // If coming from the school picker, scope the UI to that school
   const schoolParam = searchParams.get('school')?.toLowerCase() ?? ''
   // Trust the URL param directly for display (email validation still enforces allowed domains on submit)
-  const displayDomain = schoolParam.includes('.') ? schoolParam : primaryDomain
+  const displayDomain = schoolParam ? slugToDomain(schoolParam) : primaryDomain
   const emailPlaceholder = `you@${displayDomain}`
-
   const schoolLabel: Record<string, string> = {
     'umich.edu': 'UMich',
     'northwestern.edu': 'Northwestern',
+    'illinois.edu': 'UIUC',
   }
 
   useEffect(() => {
@@ -117,8 +118,7 @@ function LoginPageContent() {
       return
     }
 
-    // Redirect to school-scoped boards (slug = first part of domain e.g. "northwestern")
-    const slug = schoolParam ? schoolParam.split('.')[0] : 'umich'
+    const slug = schoolParam ? domainToSlug(displayDomain) : 'umich'
     window.location.href = `/${slug}/boards`
   }
 
@@ -143,7 +143,7 @@ function LoginPageContent() {
         setStatus('handle')
         return
       }
-      const slug = schoolParam ? schoolParam.split('.')[0] : 'umich'
+      const slug = schoolParam ? domainToSlug(displayDomain) : 'umich'
       window.location.href = `/${slug}/boards`
     } catch {
       setHandleError('Something went wrong. Please try again.')
@@ -152,7 +152,7 @@ function LoginPageContent() {
   }
 
   function skipHandle() {
-    const slug = schoolParam ? schoolParam.split('.')[0] : 'umich'
+    const slug = schoolParam ? domainToSlug(displayDomain) : 'umich'
     window.location.href = `/${slug}/boards`
   }
 

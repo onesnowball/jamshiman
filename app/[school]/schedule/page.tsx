@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { ScheduleBuilder } from '@/components/schedule/ScheduleBuilder'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
-import { getUniversityBySlug } from '@/lib/school'
+import { getUniversityBySlug, slugToDomain } from '@/lib/school'
 import type { Course, Schedule, ScheduleCourse } from '@/types/database'
 
 type ScheduleBlockRow = ScheduleCourse & { courses: Pick<Course, 'code' | 'name'> | null }
@@ -16,7 +16,7 @@ export default async function SchedulePage({
   searchParams: { schedule?: string }
 }) {
   const viewer = await getOptionalViewer()
-  if (!viewer) redirect(`/auth/login?school=${params.school}.edu`)
+  if (!viewer) redirect(`/auth/login?school=${slugToDomain(params.school)}`)
 
   const university = await getUniversityBySlug(params.school)
   const supabase = createAdminClient()

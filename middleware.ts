@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 // Routes anyone can visit without being signed in
 const PUBLIC_PATHS = ['/', '/auth']
+const DEV_BYPASS_COOKIE = 'jamshiman-dev-bypass'
 
 // Top-level path segments that are NOT school slugs
 const RESERVED_SEGMENTS = new Set(['admin', 'profile', 'messages', 'auth', 'api', '_next'])
@@ -31,10 +32,17 @@ function hasSessionCookie(request: NextRequest): boolean {
   return false
 }
 
+function hasDevBypassCookie(request: NextRequest): boolean {
+  return (
+    process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true' &&
+    request.cookies.get(DEV_BYPASS_COOKIE)?.value === '1'
+  )
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (!isPublic(pathname) && !hasSessionCookie(request)) {
+  if (!isPublic(pathname) && !hasSessionCookie(request) && !hasDevBypassCookie(request)) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/auth/login'
     return NextResponse.redirect(loginUrl)

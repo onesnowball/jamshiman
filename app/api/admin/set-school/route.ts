@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminViewer } from '@/lib/server-auth'
+import { createAdminClient } from '@/lib/supabase/server'
+import { domainToSlug, slugToDomain } from '@/lib/school-slugs'
 
 /**
  * GET /api/admin/set-school?school=northwestern
@@ -19,8 +21,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/admin', req.url))
   }
 
+  const supabase = createAdminClient()
+  const { data: university } = await supabase
+    .from('universities')
+    .select('domain')
+    .eq('domain', slugToDomain(school))
+    .eq('active', true)
+    .single()
+
+  if (!university) {
+    return NextResponse.redirect(new URL('/admin', req.url))
+  }
+
   const response = NextResponse.redirect(new URL('/admin', req.url))
-  response.cookies.set('last_school', school, {
+  response.cookies.set('last_school', domainToSlug((university as { domain: string }).domain), {
     path: '/',
     maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: 'lax',

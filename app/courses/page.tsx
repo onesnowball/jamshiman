@@ -1,8 +1,10 @@
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import { CourseSearch } from '@/components/courses/CourseSearch'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
+import { domainToSlug } from '@/lib/school-slugs'
 import type { Course } from '@/types/database'
 
 type CourseListItem = Course & {
@@ -18,6 +20,18 @@ export default async function CoursesPage({
 }) {
   const supabase = createAdminClient()
   const viewer = await getOptionalViewer()
+  if (!viewer) redirect('/auth/login')
+
+  const lastSchool = cookies().get('last_school')?.value
+  if (lastSchool) redirect(`/${lastSchool}/courses`)
+
+  const { data: viewerUniversity } = await supabase
+    .from('universities')
+    .select('domain')
+    .eq('id', viewer.university_id)
+    .single()
+  if (viewerUniversity) redirect(`/${domainToSlug((viewerUniversity as { domain: string }).domain)}/courses`)
+
   const isGlobalAdmin = viewer?.role === 'admin'
 
   let scopedUniversityId: string | null = null
