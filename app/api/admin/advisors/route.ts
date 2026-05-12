@@ -3,6 +3,43 @@ import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAdminViewer, canAdminUniversity } from '@/lib/server-auth'
 
+async function syncAdvisorDepartmentAffiliations(
+  supabaseAny: any,
+  advisorId: string,
+  primaryDeptId: string,
+  additionalDeptIds: string[],
+  universityId: string,
+) {
+  const unique = Array.from(new Set(additionalDeptIds)).filter(id => id && id !== primaryDeptId)
+  const { error: delErr } = await supabaseAny.from('advisor_department_affiliations').delete().eq('advisor_id', advisorId)
+  if (delErr) throw new Error(delErr.message)
+  if (!unique.length) return
+
+  const { data: deptRows, error: deptErr } = await supabaseAny
+    .from('departments')
+    .select('id, university_id, is_board_category')
+    .in('id', unique)
+  if (deptErr) throw new Error(deptErr.message)
+
+  const dr = (deptRows ?? []) as { id: string; university_id: string; is_board_category: boolean }[]
+  if (dr.length !== unique.length) {
+    throw new Error('One or more additional departments were not found.')
+  }
+  for (const d of dr) {
+    if (d.university_id !== universityId) {
+      throw new Error('An additional department belongs to a different university.')
+    }
+    if (d.is_board_category) {
+      throw new Error('Board topics cannot be used as academic departments.')
+    }
+  }
+
+  const { error: insErr } = await supabaseAny.from('advisor_department_affiliations').insert(
+    unique.map(dept_id => ({ advisor_id: advisorId, dept_id }))
+  )
+  if (insErr) throw new Error(insErr.message)
+}
+
 const AdvisorSchema = z.object({
   dept_id: z.string().uuid(),
   name: z.string().min(3).max(120),
@@ -10,6 +47,7 @@ const AdvisorSchema = z.object({
   lab_name: z.string().max(160).optional().or(z.literal('')),
   research_areas: z.array(z.string().min(1).max(60)).max(12),
   active: z.boolean().optional().default(true),
+  additional_dept_ids: z.array(z.string().uuid()).max(12).optional().default([]),
 })
 
 const AdvisorUpdateSchema = AdvisorSchema.extend({
@@ -64,6 +102,19 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  try {
+    await syncAdvisorDepartmentAffiliations(
+      supabaseAny,
+      data.id,
+      parsed.data.dept_id,
+      parsed.data.additional_dept_ids,
+      (department as { university_id: string }).university_id,
+    )
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Could not save department affiliations.'
+    return NextResponse.json({ error: msg }, { status: 400 })
   }
 
   await supabaseAny.from('audit_log').insert({
@@ -136,6 +187,19 @@ export async function PATCH(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  try {
+    await syncAdvisorDepartmentAffiliations(
+      supabaseAny,
+      parsed.data.id,
+      parsed.data.dept_id,
+      parsed.data.additional_dept_ids,
+      (department as { university_id: string }).university_id,
+    )
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Could not save department affiliations.'
+    return NextResponse.json({ error: msg }, { status: 400 })
   }
 
   await supabaseAny.from('audit_log').insert({

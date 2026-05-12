@@ -5,6 +5,7 @@ import { AdvisorSearch } from '@/components/advisors/AdvisorSearch'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { canonicalSchoolSlug, domainToSlug } from '@/lib/school-slugs'
+import { buildExtraDeptNamesByAdvisor, formatAdvisorDepartmentLine } from '@/lib/advisor-departments'
 
 export default async function AdvisorsPage({
   searchParams,
@@ -46,7 +47,6 @@ export default async function AdvisorsPage({
     .select('*, departments(name)')
     .eq('active', true)
     .order('name')
-    .limit(200)
   if (!isGlobalAdmin || scopedUniversityId) {
     if (effectiveUniversityId) advisorQuery = advisorQuery.eq('university_id', effectiveUniversityId)
   }
@@ -63,10 +63,41 @@ export default async function AdvisorsPage({
       .map(a => [a.advisor_id, a])
   )
 
-  const advisors = ((advisorsData ?? []) as any[]).map(a => ({
-    ...a,
-    advisor_aggregates: aggMap.get(a.id) ?? null,
-  }))
+  const advisorsRaw = ((advisorsData ?? []) as any[])
+
+  let advisors
+  if (effectiveUniversityId && advisorsRaw.length) {
+    const { data: deptRows } = await supabase
+      .from('departments')
+      .select('id, name')
+      .eq('university_id', effectiveUniversityId)
+    const deptMap = new Map(((deptRows ?? []) as { id: string; name: string }[]).map(d => [d.id, d.name]))
+    const ids = advisorsRaw.map(a => a.id)
+    const { data: affData, error: affErr } = await (supabase as any)
+      .from('advisor_department_affiliations')
+      .select('advisor_id, dept_id')
+      .in('advisor_id', ids)
+    const extraNamesByAdvisor = affErr
+      ? new Map<string, string[]>()
+      : buildExtraDeptNamesByAdvisor(
+          (affData ?? []) as { advisor_id: string; dept_id: string }[],
+          deptMap
+        )
+    advisors = advisorsRaw.map(a => ({
+      ...a,
+      departmentLabel: formatAdvisorDepartmentLine(
+        deptMap.get(a.dept_id) ?? a.departments?.name ?? null,
+        extraNamesByAdvisor.get(a.id)
+      ),
+      advisor_aggregates: aggMap.get(a.id) ?? null,
+    }))
+  } else {
+    advisors = advisorsRaw.map(a => ({
+      ...a,
+      departmentLabel: formatAdvisorDepartmentLine(a.departments?.name ?? null, undefined),
+      advisor_aggregates: aggMap.get(a.id) ?? null,
+    }))
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

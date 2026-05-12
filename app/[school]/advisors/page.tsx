@@ -1,6 +1,7 @@
 import { AdvisorSearch } from '@/components/advisors/AdvisorSearch'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getUniversityBySlug } from '@/lib/school'
+import { buildExtraDeptNamesByAdvisor, formatAdvisorDepartmentLine } from '@/lib/advisor-departments'
 import { notFound } from 'next/navigation'
 
 // Always fetch fresh — no cookies() call here so Next.js would otherwise
@@ -19,8 +20,7 @@ export default async function AdvisorsPage({ params }: { params: { school: strin
       .select('*')
       .eq('active', true)
       .eq('university_id', university.id)
-      .order('name')
-      .limit(200),
+      .order('name'),
     supabase
       .from('departments')
       .select('id, name')
@@ -39,11 +39,32 @@ export default async function AdvisorsPage({ params }: { params: { school: strin
       .map(a => [a.advisor_id, a])
   )
 
-  const advisors = ((advisorsData ?? []) as any[]).map(a => ({
-    ...a,
-    departments: { name: deptMap.get(a.dept_id) ?? null },
-    advisor_aggregates: aggMap.get(a.id) ?? null,
-  }))
+  const advisorsRaw = (advisorsData ?? []) as any[]
+  const advisorIds = advisorsRaw.map(a => a.id)
+  const { data: affData, error: affErr } = advisorIds.length
+    ? await (supabase as any)
+        .from('advisor_department_affiliations')
+        .select('advisor_id, dept_id')
+        .in('advisor_id', advisorIds)
+    : { data: [] as { advisor_id: string; dept_id: string }[], error: null }
+
+  const extraNamesByAdvisor = affErr
+    ? new Map<string, string[]>()
+    : buildExtraDeptNamesByAdvisor(
+        (affData ?? []) as { advisor_id: string; dept_id: string }[],
+        deptMap
+      )
+
+  const advisors = advisorsRaw.map(a => {
+    const primaryName = deptMap.get(a.dept_id) ?? null
+    const extras = extraNamesByAdvisor.get(a.id)
+    return {
+      ...a,
+      departments: { name: primaryName },
+      departmentLabel: formatAdvisorDepartmentLine(primaryName, extras),
+      advisor_aggregates: aggMap.get(a.id) ?? null,
+    }
+  })
 
   return (
     <main className="max-w-3xl mx-auto px-4 py-8 page-enter space-y-2">

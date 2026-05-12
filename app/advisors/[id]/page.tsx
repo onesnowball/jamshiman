@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { formatAdvisorDepartmentLine } from '@/lib/advisor-departments'
 import { Navbar } from '@/components/Navbar'
 import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
 import { RatingDisplay, StarRating } from '@/components/ui/StarRating'
@@ -45,6 +46,21 @@ export default async function AdvisorPage({ params }: { params: { id: string } }
 
   if (!advisor) notFound()
 
+  const { data: affRows, error: affErr } = await supabase
+    .from('advisor_department_affiliations')
+    .select('dept_id')
+    .eq('advisor_id', params.id)
+
+  const extraDeptIds = affErr
+    ? []
+    : ((affRows ?? []) as { dept_id: string }[]).map(r => r.dept_id)
+  const { data: extraDeptRows } = extraDeptIds.length
+    ? await supabase.from('departments').select('name').in('id', extraDeptIds)
+    : { data: [] as { name: string }[] }
+
+  const extraDeptNames = ((extraDeptRows ?? []) as { name: string }[]).map(d => d.name)
+  const departmentLine = formatAdvisorDepartmentLine(advisor.departments?.name ?? null, extraDeptNames)
+
   const { data: statsData } = await supabase
     .from('advisor_aggregates')
     .select('*')
@@ -77,7 +93,7 @@ export default async function AdvisorPage({ params }: { params: { id: string } }
                   <h1 className="font-semibold text-gray-900 leading-tight">{advisor.name}</h1>
                   {advisor.title && <p className="text-sm text-gray-500">{advisor.title}</p>}
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {advisor.departments?.name}
+                    {departmentLine}
                   </p>
                 </div>
               </div>

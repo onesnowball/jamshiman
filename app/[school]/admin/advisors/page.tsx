@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic'
 
 type AdminAdvisor = Advisor & {
   departments: { name: string | null } | null
+  additional_dept_ids?: string[]
 }
 
 export default async function AdminAdvisorsPage({ params }: { params: { school: string } }) {
@@ -37,6 +38,27 @@ export default async function AdminAdvisorsPage({ params }: { params: { school: 
   ])
 
   const advisors = (advisorsData ?? []) as AdminAdvisor[]
+  const advisorIds = advisors.map(a => a.id)
+  const supabaseAny = supabase as any
+  const { data: affData, error: affErr } = advisorIds.length
+    ? await supabaseAny
+        .from('advisor_department_affiliations')
+        .select('advisor_id, dept_id')
+        .in('advisor_id', advisorIds)
+    : { data: [] as { advisor_id: string; dept_id: string }[], error: null }
+
+  const affByAdvisor = new Map<string, string[]>()
+  for (const row of (affErr ? [] : (affData ?? [])) as { advisor_id: string; dept_id: string }[]) {
+    const list = affByAdvisor.get(row.advisor_id) ?? []
+    list.push(row.dept_id)
+    affByAdvisor.set(row.advisor_id, list)
+  }
+
+  const advisorsWithAff = advisors.map(a => ({
+    ...a,
+    additional_dept_ids: affByAdvisor.get(a.id) ?? [],
+  }))
+
   const departments = (departmentsData ?? []) as Department[]
 
   return (
@@ -53,7 +75,7 @@ export default async function AdminAdvisorsPage({ params }: { params: { school: 
           </div>
         </div>
 
-        <AdvisorAdminManager advisors={advisors} departments={departments} schoolSlug={params.school} />
+        <AdvisorAdminManager advisors={advisorsWithAff} departments={departments} schoolSlug={params.school} />
       </main>
     </div>
   )

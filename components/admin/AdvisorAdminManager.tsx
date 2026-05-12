@@ -4,10 +4,12 @@ import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Loader2, Plus, UserCog } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { formatAdvisorDepartmentLine } from '@/lib/advisor-departments'
 import type { Advisor, Department } from '@/types/database'
 
 type AdvisorRecord = Advisor & {
   departments: { name: string | null } | null
+  additional_dept_ids?: string[]
 }
 
 function defaultDeptId(departments: Department[]) {
@@ -35,6 +37,7 @@ const emptyForm = {
   lab_name: '',
   research_areas: '',
   active: true,
+  additional_dept_ids: [] as string[],
 }
 
 export function AdvisorAdminManager({
@@ -63,6 +66,14 @@ export function AdvisorAdminManager({
     setForm(f => (f.dept_id === next ? f : { ...f, dept_id: next }))
   }, [departments, form.id, form.dept_id])
 
+  useEffect(() => {
+    setForm(f => {
+      const filtered = f.additional_dept_ids.filter(id => id !== f.dept_id)
+      if (filtered.length === f.additional_dept_ids.length) return f
+      return { ...f, additional_dept_ids: filtered }
+    })
+  }, [form.dept_id])
+
   const departmentMap = useMemo(
     () => new Map(departments.map(department => [department.id, department.name])),
     [departments]
@@ -79,6 +90,7 @@ export function AdvisorAdminManager({
           .split(',')
           .map(area => area.trim())
           .filter(Boolean),
+        additional_dept_ids: form.additional_dept_ids.filter(id => id && id !== form.dept_id),
       }
 
       const response = await fetch('/api/admin/advisors', {
@@ -92,6 +104,7 @@ export function AdvisorAdminManager({
       setForm({
         ...emptyForm,
         dept_id: defaultDeptId(departments),
+        additional_dept_ids: [],
       })
       router.refresh()
     } catch (err: any) {
@@ -110,6 +123,16 @@ export function AdvisorAdminManager({
       lab_name: advisor.lab_name ?? '',
       research_areas: advisor.research_areas.join(', '),
       active: advisor.active,
+      additional_dept_ids: [...(advisor.additional_dept_ids ?? [])],
+    })
+  }
+
+  function toggleAdditionalDept(deptId: string) {
+    setForm(f => {
+      const next = new Set(f.additional_dept_ids)
+      if (next.has(deptId)) next.delete(deptId)
+      else next.add(deptId)
+      return { ...f, additional_dept_ids: Array.from(next) }
     })
   }
 
@@ -129,6 +152,7 @@ export function AdvisorAdminManager({
           lab_name: advisor.lab_name ?? '',
           research_areas: advisor.research_areas,
           active: !advisor.active,
+          additional_dept_ids: advisor.additional_dept_ids ?? [],
         }),
       })
       const data = await response.json()
@@ -179,6 +203,29 @@ export function AdvisorAdminManager({
             Every department is hidden from students. Turn at least one to &quot;Visible&quot; so it appears on the
             Departments tab; you can still create advisors now.
           </p>
+        )}
+
+        {departments.filter(d => d.id !== form.dept_id).length > 0 && (
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-medium text-gray-600">Also appointed in (optional)</legend>
+            <p className="text-[11px] text-gray-400">Cross-department or courtesy appointments — shown on each department&apos;s page.</p>
+            <div className="max-h-36 overflow-y-auto space-y-1.5 border border-gray-100 rounded-lg p-2 bg-white">
+              {departments
+                .filter(d => d.id !== form.dept_id)
+                .map(d => (
+                  <label key={d.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                      checked={form.additional_dept_ids.includes(d.id)}
+                      onChange={() => toggleAdditionalDept(d.id)}
+                    />
+                    <span>{d.name}</span>
+                    {!d.active && <span className="text-[10px] text-gray-400">(hidden)</span>}
+                  </label>
+                ))}
+            </div>
+          </fieldset>
         )}
 
         <input
@@ -233,7 +280,7 @@ export function AdvisorAdminManager({
           {form.id && (
             <button
               type="button"
-              onClick={() => setForm({ ...emptyForm, dept_id: defaultDeptId(departments) })}
+              onClick={() => setForm({ ...emptyForm, dept_id: defaultDeptId(departments), additional_dept_ids: [] })}
               className="btn-secondary"
             >
               Cancel
@@ -253,7 +300,10 @@ export function AdvisorAdminManager({
                 </span>
               </div>
               <p className="text-sm text-gray-500 mt-1">
-                {departmentMap.get(advisor.dept_id) ?? advisor.departments?.name ?? 'Department'}
+                {formatAdvisorDepartmentLine(
+                  departmentMap.get(advisor.dept_id) ?? advisor.departments?.name ?? null,
+                  (advisor.additional_dept_ids ?? []).map(id => departmentMap.get(id) ?? '').filter(Boolean)
+                )}
                 {advisor.title ? ` · ${advisor.title}` : ''}
               </p>
               {advisor.lab_name && <p className="text-xs text-gray-400 mt-1">{advisor.lab_name}</p>}

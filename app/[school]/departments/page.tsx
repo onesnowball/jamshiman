@@ -32,11 +32,30 @@ export default async function DepartmentsPage({ params }: { params: { school: st
   ])
 
   const departments = (deptData ?? []) as { id: string; name: string; slug: string }[]
+  const deptIds = departments.map(d => d.id)
 
-  const advisorCountMap = new Map<string, number>()
-  for (const a of (advisorData ?? []) as { dept_id: string }[]) {
-    advisorCountMap.set(a.dept_id, (advisorCountMap.get(a.dept_id) ?? 0) + 1)
+  const { data: affRows, error: affErr } = deptIds.length
+    ? await (supabase as any)
+        .from('advisor_department_affiliations')
+        .select('advisor_id, dept_id')
+        .in('dept_id', deptIds)
+    : { data: [] as { advisor_id: string; dept_id: string }[], error: null }
+
+  const advisorSetsByDept = new Map<string, Set<string>>()
+  for (const d of departments) advisorSetsByDept.set(d.id, new Set())
+  for (const a of (advisorData ?? []) as { id: string; dept_id: string }[]) {
+    const s = advisorSetsByDept.get(a.dept_id)
+    if (s) s.add(a.id)
   }
+  if (!affErr) {
+    for (const r of (affRows ?? []) as { advisor_id: string; dept_id: string }[]) {
+      const s = advisorSetsByDept.get(r.dept_id)
+      if (s) s.add(r.advisor_id)
+    }
+  }
+  const advisorCountMap = new Map(
+    Array.from(advisorSetsByDept.entries()).map(([deptId, set]) => [deptId, set.size])
+  )
 
   const courseCountMap = new Map<string, number>()
   for (const c of (courseData ?? []) as { dept_id: string }[]) {

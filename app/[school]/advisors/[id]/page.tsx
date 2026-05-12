@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getUniversityBySlug } from '@/lib/school'
+import { formatAdvisorDepartmentLine } from '@/lib/advisor-departments'
 
 export const dynamic = 'force-dynamic'
 import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
@@ -62,6 +63,21 @@ export default async function AdvisorPage({ params }: { params: { school: string
   const advisor = advisorData as AdvisorPageAdvisor | null
   if (!advisor) notFound()
 
+  const { data: affRows, error: affErr } = await (supabase as any)
+    .from('advisor_department_affiliations')
+    .select('dept_id')
+    .eq('advisor_id', params.id)
+
+  const extraDeptIds = affErr
+    ? []
+    : ((affRows ?? []) as { dept_id: string }[]).map(r => r.dept_id)
+  const { data: extraDeptRows } = extraDeptIds.length
+    ? await supabase.from('departments').select('name').in('id', extraDeptIds)
+    : { data: [] as { name: string }[] }
+
+  const extraDeptNames = ((extraDeptRows ?? []) as { name: string }[]).map(d => d.name)
+  const departmentLine = formatAdvisorDepartmentLine(advisor.departments?.name ?? null, extraDeptNames)
+
   const stats = statsData as AdvisorAggregate | null
   const reviews = (reviewsData ?? []) as (AdvisorPageReview & { is_lab_member: boolean | null })[]
 
@@ -77,7 +93,7 @@ export default async function AdvisorPage({ params }: { params: { school: string
               <div>
                 <h1 className="font-semibold text-gray-900 leading-tight">{advisor.name}</h1>
                 {advisor.title && <p className="text-sm text-gray-500">{advisor.title}</p>}
-                <p className="text-xs text-gray-400 mt-0.5">{advisor.departments?.name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{departmentLine}</p>
               </div>
             </div>
 

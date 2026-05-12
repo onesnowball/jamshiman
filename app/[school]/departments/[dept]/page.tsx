@@ -41,7 +41,8 @@ export default async function DepartmentPage({
 
   // Fetch all data in parallel
   const [
-    { data: advisorsData },
+    { data: advisorsPrimaryData },
+    { data: affRows, error: affErr },
     { data: coursesData },
     { data: postsData },
     { data: boardTopicsData },
@@ -49,10 +50,14 @@ export default async function DepartmentPage({
   ] = await Promise.all([
     (supabase as any)
       .from('advisors')
-      .select('id, name, title, lab_name, research_areas')
+      .select('id, name, title, lab_name, research_areas, dept_id')
       .eq('dept_id', department.id)
       .eq('active', true)
       .order('name'),
+    (supabase as any)
+      .from('advisor_department_affiliations')
+      .select('advisor_id')
+      .eq('dept_id', department.id),
     (supabase as any)
       .from('courses')
       .select('id, code, name, credits')
@@ -79,9 +84,42 @@ export default async function DepartmentPage({
       .select('advisor_id, review_count, avg_overall'),
   ])
 
-  const advisors = (advisorsData ?? []) as {
-    id: string; name: string; title: string | null; lab_name: string | null; research_areas: string[]
+  const primaryList = (advisorsPrimaryData ?? []) as {
+    id: string; name: string; title: string | null; lab_name: string | null; research_areas: string[]; dept_id: string
   }[]
+
+  const primaryIds = new Set(primaryList.map(a => a.id))
+  const extraIds = affErr
+    ? []
+    : ((affRows ?? []) as { advisor_id: string }[])
+        .map(r => r.advisor_id)
+        .filter(id => id && !primaryIds.has(id))
+
+  let extraList: typeof primaryList = []
+  if (extraIds.length) {
+    const { data: extraData } = await (supabase as any)
+      .from('advisors')
+      .select('id, name, title, lab_name, research_areas, dept_id')
+      .in('id', extraIds)
+      .eq('university_id', university.id)
+      .eq('active', true)
+      .order('name')
+    extraList = (extraData ?? []) as typeof primaryList
+  }
+
+  const advisors = [...primaryList, ...extraList].sort((a, b) => a.name.localeCompare(b.name))
+
+  const primaryDeptIds = Array.from(new Set(extraList.map(a => a.dept_id)))
+  let primaryDeptNameById = new Map<string, string>()
+  if (primaryDeptIds.length) {
+    const { data: drows } = await supabase
+      .from('departments')
+      .select('id, name')
+      .in('id', primaryDeptIds)
+    primaryDeptNameById = new Map(
+      ((drows ?? []) as { id: string; name: string }[]).map(d => [d.id, d.name])
+    )
+  }
 
   const courses = (coursesData ?? []) as (Course & { id: string; code: string; name: string; credits: number | null })[]
 
@@ -176,6 +214,12 @@ export default async function DepartmentPage({
                           )}
                         </div>
                         {advisor.title && <p className="text-xs text-gray-400 mt-0.5">{advisor.title}</p>}
+                        {advisor.dept_id !== department.id && (
+                          <p className="text-xs text-brand-700 mt-0.5">
+                            Joint / courtesy listing — primary:{' '}
+                            {primaryDeptNameById.get(advisor.dept_id) ?? 'another department'}
+                          </p>
+                        )}
                         {advisor.lab_name && (
                           <div className="flex items-center gap-1 mt-1">
                             <FlaskConical className="w-3 h-3 text-gray-400" />

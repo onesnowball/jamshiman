@@ -79,6 +79,15 @@ export interface Database {
         Insert: Omit<advisor_reviews['Row'], 'id' | 'created_at'>
         Update: Partial<advisor_reviews['Insert']>
       }
+      advisor_department_affiliations: {
+        Row: {
+          advisor_id: string
+          dept_id: string
+          created_at: string
+        }
+        Insert: { advisor_id: string; dept_id: string }
+        Update: Partial<{ advisor_id: string; dept_id: string }>
+      }
       courses: {
         Row: {
           id: string

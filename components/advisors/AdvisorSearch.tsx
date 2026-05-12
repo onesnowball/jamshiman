@@ -11,7 +11,10 @@ type AdvisorItem = {
   title: string | null
   lab_name: string | null
   research_areas: string[]
-  departments: { name: string } | null
+  /** Primary department (legacy shape for nested data). */
+  departments: { name: string | null } | null
+  /** Combined primary + cross-appointments for list + search. */
+  departmentLabel?: string
   advisor_aggregates: {
     review_count: number
     avg_overall: number
@@ -37,12 +40,15 @@ export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; s
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
     if (!q) return advisors
-    return advisors.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      a.lab_name?.toLowerCase().includes(q) ||
-      a.research_areas?.some(area => area.toLowerCase().includes(q)) ||
-      a.departments?.name.toLowerCase().includes(q)
-    )
+    return advisors.filter(a => {
+      const deptLine = (a.departmentLabel ?? a.departments?.name ?? '').toLowerCase()
+      return (
+        a.name.toLowerCase().includes(q) ||
+        a.lab_name?.toLowerCase().includes(q) ||
+        a.research_areas?.some(area => area.toLowerCase().includes(q)) ||
+        deptLine.includes(q)
+      )
+    })
   }, [advisors, query])
 
   return (
@@ -92,7 +98,7 @@ export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; s
                         {advisor.name}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {advisor.departments?.name}
+                        {(advisor.departmentLabel ?? advisor.departments?.name) || 'Department'}
                         {advisor.title ? ` · ${advisor.title}` : ''}
                       </p>
                     </div>
