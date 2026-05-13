@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createAdminClient } from './supabase/server'
-import { slugToDomain, domainToSlug } from './school-slugs'
+import { canonicalSchoolPathSlug, slugToDomain, domainToSlug } from './school-slugs'
 
 export type UniversityRow = { id: string; name: string; domain: string }
 
@@ -15,5 +15,13 @@ export const getUniversityBySlug = cache(async (slug: string): Promise<Universit
     .single()
   return (data as UniversityRow | null)
 })
+
+export async function getValidUniversitySlug(slugOrDomain?: string | null): Promise<string | null> {
+  const slug = canonicalSchoolPathSlug(slugOrDomain)
+  if (!slug) return null
+
+  const university = await getUniversityBySlug(slug)
+  return university ? domainToSlug(university.domain) : null
+}
 
 export { domainToSlug, slugToDomain }

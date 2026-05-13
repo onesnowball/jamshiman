@@ -3,7 +3,8 @@ import { getOptionalViewer } from '@/lib/server-auth'
 import { createAdminClient } from '@/lib/supabase/server'
 import { NavbarClient } from './NavbarClient'
 import { SuspensionBanner } from './SuspensionBanner'
-import { canonicalSchoolSlug, domainToSlug } from '@/lib/school-slugs'
+import { domainToSlug } from '@/lib/school-slugs'
+import { getValidUniversitySlug } from '@/lib/school'
 
 export async function Navbar({ school }: { school?: string } = {}) {
   const viewer = await getOptionalViewer()
@@ -19,7 +20,8 @@ export async function Navbar({ school }: { school?: string } = {}) {
   // restore whichever school they last browsed via the last_school cookie.
   if (!resolvedSchool && isAnyAdmin) {
     const lastSchool = cookies().get('last_school')?.value
-    if (lastSchool) resolvedSchool = canonicalSchoolSlug(lastSchool)
+    const lastSchoolSlug = await getValidUniversitySlug(lastSchool)
+    if (lastSchoolSlug) resolvedSchool = lastSchoolSlug
   }
 
   // For regular users (and campus admins without a last_school cookie),

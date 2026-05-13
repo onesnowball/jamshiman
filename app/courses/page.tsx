@@ -4,7 +4,8 @@ import { Navbar } from '@/components/Navbar'
 import { CourseSearch } from '@/components/courses/CourseSearch'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
-import { canonicalSchoolSlug, domainToSlug } from '@/lib/school-slugs'
+import { domainToSlug } from '@/lib/school-slugs'
+import { getValidUniversitySlug } from '@/lib/school'
 import type { Course } from '@/types/database'
 
 type CourseListItem = Course & {
@@ -22,8 +23,8 @@ export default async function CoursesPage({
   const viewer = await getOptionalViewer()
   if (!viewer) redirect('/auth/login')
 
-  const lastSchool = cookies().get('last_school')?.value
-  if (lastSchool) redirect(`/${canonicalSchoolSlug(lastSchool)}/courses`)
+  const lastSchool = await getValidUniversitySlug(cookies().get('last_school')?.value)
+  if (lastSchool) redirect(`/${lastSchool}/courses`)
 
   const { data: viewerUniversity } = await supabase
     .from('universities')

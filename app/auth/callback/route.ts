@@ -3,13 +3,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { getAllowedSchoolDomains, getEmailDomain, isAllowedSchoolEmail, normalizeEmail } from '@/lib/auth'
+import { domainToSlug } from '@/lib/school-slugs'
+
+const LEGACY_SCHOOL_ROOTS = ['/advisors', '/boards', '/courses', '/schedule']
+
+function normalizeNextPath(nextParam: string | null, schoolSlug: string): string {
+  if (!nextParam || !nextParam.startsWith('/') || nextParam.startsWith('//')) {
+    return `/${schoolSlug}/advisors`
+  }
+
+  const legacyRoot = LEGACY_SCHOOL_ROOTS.find(root =>
+    nextParam === root ||
+    nextParam.startsWith(`${root}/`) ||
+    nextParam.startsWith(`${root}?`) ||
+    nextParam.startsWith(`${root}#`)
+  )
+
+  return legacyRoot ? `/${schoolSlug}${nextParam}` : nextParam
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const tokenHash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
-  const next = searchParams.get('next') ?? '/advisors'
+  const requestedNext = searchParams.get('next')
 
   const supabase = createClient()
   const adminSupabase = createAdminClient()
@@ -80,5 +98,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/auth/login?error=profile_failed`)
   }
 
-  return NextResponse.redirect(`${origin}${next}`)
+  return NextResponse.redirect(`${origin}${normalizeNextPath(requestedNext, domainToSlug(domain))}`)
 }

@@ -1,17 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { canonicalSchoolSlug } from '@/lib/school-slugs'
+import { canonicalSchoolPathSlug, canonicalSchoolSlug, isSchoolPathSlug } from '@/lib/school-slugs'
 
 // Routes anyone can visit without being signed in
 const PUBLIC_PATHS = ['/', '/auth']
 const DEV_BYPASS_COOKIE = 'jamshiman-dev-bypass'
 
-// Top-level path segments that are NOT school slugs
-const RESERVED_SEGMENTS = new Set(['admin', 'profile', 'messages', 'auth', 'api', '_next'])
-
-// School slugs are purely alphabetic (e.g. "umich", "northwestern")
-// This guards against file paths like "sw.js", "favicon.ico", etc.
 function isSchoolSlug(segment: string): boolean {
-  return /^[a-z]+$/.test(segment) && !RESERVED_SEGMENTS.has(segment)
+  return isSchoolPathSlug(segment)
 }
 
 function isPublic(pathname: string) {
@@ -70,6 +65,11 @@ export function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next()
+  const lastSchool = request.cookies.get('last_school')?.value
+  if (lastSchool && !canonicalSchoolPathSlug(lastSchool)) {
+    response.cookies.delete('last_school')
+  }
+
   if (isSchoolSlug(firstSegment)) {
     response.cookies.set('last_school', canonicalSchoolSlug(firstSegment), {
       path: '/',

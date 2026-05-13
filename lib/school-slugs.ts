@@ -11,6 +11,20 @@ export const SLUG_TO_DOMAIN: Record<string, string> = {
   uiuc: 'illinois.edu',
 }
 
+export const RESERVED_TOP_LEVEL_SEGMENTS = new Set([
+  '_next',
+  'admin',
+  'advisors',
+  'api',
+  'auth',
+  'boards',
+  'courses',
+  'departments',
+  'messages',
+  'profile',
+  'schedule',
+])
+
 /** Preferred URL slug for each domain key in SLUG_TO_DOMAIN (last slug wins if duplicated). */
 const DOMAIN_TO_CANONICAL_SLUG: Record<string, string> = {}
 for (const [slug, domain] of Object.entries(SLUG_TO_DOMAIN)) {
@@ -34,4 +48,15 @@ export function domainToSlug(domain: string): string {
 
 export function canonicalSchoolSlug(slugOrDomain: string): string {
   return domainToSlug(slugToDomain(slugOrDomain))
+}
+
+export function isSchoolPathSlug(segment: string): boolean {
+  return /^[a-z]+$/.test(segment) && !RESERVED_TOP_LEVEL_SEGMENTS.has(segment)
+}
+
+export function canonicalSchoolPathSlug(slugOrDomain?: string | null): string | null {
+  if (!slugOrDomain) return null
+
+  const canonicalSlug = canonicalSchoolSlug(slugOrDomain)
+  return isSchoolPathSlug(canonicalSlug) ? canonicalSlug : null
 }

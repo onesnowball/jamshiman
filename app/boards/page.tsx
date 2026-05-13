@@ -7,7 +7,8 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
-import { canonicalSchoolSlug, domainToSlug } from '@/lib/school-slugs'
+import { domainToSlug } from '@/lib/school-slugs'
+import { getValidUniversitySlug } from '@/lib/school'
 import type { Department, Post } from '@/types/database'
 
 type FeedPost = Post & { commentCount: number; authorLabel: string; deptName: string; upvoteCount: number }
@@ -21,8 +22,8 @@ export default async function BoardsPage({
   const viewer = await getOptionalViewer()
   if (!viewer) redirect('/auth/login')
 
-  const lastSchool = cookies().get('last_school')?.value
-  if (lastSchool) redirect(`/${canonicalSchoolSlug(lastSchool)}/boards`)
+  const lastSchool = await getValidUniversitySlug(cookies().get('last_school')?.value)
+  if (lastSchool) redirect(`/${lastSchool}/boards`)
 
   const { data: viewerUniversity } = await supabase
     .from('universities')

@@ -2,6 +2,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { getAllowedSchoolDomains, getEmailDomain, isAllowedSchoolEmail, normalizeEmail } from '@/lib/auth'
+import { domainToSlug } from '@/lib/school-slugs'
 
 export async function GET(request: NextRequest) {
   const { origin } = new URL(request.url)
@@ -52,5 +53,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/auth/login?error=profile_failed`)
   }
 
-  return NextResponse.redirect(`${origin}/advisors`)
+  return NextResponse.redirect(`${origin}/${domainToSlug(domain)}/advisors`)
 }
