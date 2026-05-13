@@ -51,7 +51,13 @@ export default async function AdvisorPage({ params }: { params: { school: string
   if (!university) notFound()
 
   const [{ data: advisorData }, { data: statsData }, { data: reviewsData }] = await Promise.all([
-    supabase.from('advisors').select('*, departments(name)').eq('id', params.id).eq('university_id', university.id).single(),
+    supabase
+      .from('advisors')
+      .select('*')
+      .eq('id', params.id)
+      .eq('university_id', university.id)
+      .eq('active', true)
+      .single(),
     supabase.from('advisor_aggregates').select('*').eq('advisor_id', params.id).single(),
     supabase.from('advisor_reviews')
       .select('id, degree_type, ratings, anonymized_text, created_at, is_lab_member')
@@ -60,8 +66,8 @@ export default async function AdvisorPage({ params }: { params: { school: string
       .order('created_at', { ascending: false }),
   ])
 
-  const advisor = advisorData as AdvisorPageAdvisor | null
-  if (!advisor) notFound()
+  const advisorRow = advisorData as Advisor | null
+  if (!advisorRow) notFound()
 
   const { data: affRows, error: affErr } = await (supabase as any)
     .from('advisor_department_affiliations')
@@ -71,12 +77,27 @@ export default async function AdvisorPage({ params }: { params: { school: string
   const extraDeptIds = affErr
     ? []
     : ((affRows ?? []) as { dept_id: string }[]).map(r => r.dept_id)
-  const { data: extraDeptRows } = extraDeptIds.length
-    ? await supabase.from('departments').select('name').in('id', extraDeptIds)
-    : { data: [] as { name: string }[] }
+  const deptIds = Array.from(new Set([advisorRow.dept_id, ...extraDeptIds].filter(Boolean)))
+  const { data: deptRows } = deptIds.length
+    ? await supabase
+        .from('departments')
+        .select('id, name')
+        .eq('university_id', university.id)
+        .in('id', deptIds)
+    : { data: [] as { id: string; name: string }[] }
 
-  const extraDeptNames = ((extraDeptRows ?? []) as { name: string }[]).map(d => d.name)
-  const departmentLine = formatAdvisorDepartmentLine(advisor.departments?.name ?? null, extraDeptNames)
+  const deptNameById = new Map(
+    ((deptRows ?? []) as { id: string; name: string }[]).map(dept => [dept.id, dept.name])
+  )
+  const primaryDeptName = advisorRow.dept_id ? deptNameById.get(advisorRow.dept_id) ?? null : null
+  const extraDeptNames = extraDeptIds
+    .map(id => deptNameById.get(id))
+    .filter((name): name is string => Boolean(name))
+  const departmentLine = formatAdvisorDepartmentLine(primaryDeptName, extraDeptNames)
+  const advisor: AdvisorPageAdvisor = {
+    ...advisorRow,
+    departments: primaryDeptName ? { name: primaryDeptName } : null,
+  }
 
   const stats = statsData as AdvisorAggregate | null
   const reviews = (reviewsData ?? []) as (AdvisorPageReview & { is_lab_member: boolean | null })[]
