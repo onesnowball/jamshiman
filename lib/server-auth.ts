@@ -1,6 +1,5 @@
 import type { User } from '@/types/database'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
 import {
   getDevBypassEmail,
   getDevBypassEmailHash,
@@ -11,35 +10,6 @@ export interface AppViewer extends User {
   email: string | null
   isDevBypass: boolean
   campusAdminUniversityIds: string[]  // universities this user is campus admin for
-}
-
-function readSessionFromCookie(): { access_token: string; user: { id: string; email: string } } | null {
-  const cookieStore = cookies()
-  const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
-    .replace('https://', '')
-    .split('.')[0]
-  const key = `sb-${projectRef}-auth-token`
-
-  // @supabase/ssr chunks large cookies as key.0, key.1, ...
-  // Try unchunked first, then reassemble chunks if needed.
-  const raw = cookieStore.get(key)?.value ?? (() => {
-    const parts: string[] = []
-    for (let i = 0; ; i++) {
-      const chunk = cookieStore.get(`${key}.${i}`)?.value
-      if (!chunk) break
-      parts.push(chunk)
-    }
-    return parts.length ? parts.join('') : null
-  })()
-
-  if (!raw) return null
-  try {
-    const session = JSON.parse(raw)
-    if (!session?.access_token || !session?.user?.id) return null
-    return session
-  } catch {
-    return null
-  }
 }
 
 export async function getOptionalViewer(): Promise<AppViewer | null> {
@@ -57,11 +27,10 @@ export async function getOptionalViewer(): Promise<AppViewer | null> {
     return { ...profile, email: getDevBypassEmail(), isDevBypass: true, campusAdminUniversityIds }
   }
 
-  const session = readSessionFromCookie()
-  if (!session) return null
-
-  // Verify token is still valid
-  const { data: { user }, error } = await adminSupabase.auth.getUser(session.access_token)
+  // Use the cookie-aware SSR client. After middleware refresh, this returns
+  // a valid user even if the access token has rolled over.
+  const cookieClient = createClient()
+  const { data: { user }, error } = await cookieClient.auth.getUser()
   if (error || !user) return null
 
   const { data: profileData } = await adminSupabase
@@ -92,10 +61,9 @@ async function getCampusAdminUniversityIds(userId: string, supabase: ReturnType<
 
 export async function getActionClient() {
   const viewer = await getOptionalViewer()
-  // Always use the admin client for mutations — @supabase/ssr@0.3.0 cannot
-  // reliably attach the auth token to anon-client requests, so auth.uid()
-  // returns null and RLS insert/update policies always fail.
-  // Authentication is already enforced above via getOptionalViewer().
+  // Mutations continue to use the service-role admin client because the
+  // codebase does not rely on RLS for writes — every API route explicitly
+  // checks auth (above), school scope, suspension, and ownership.
   return {
     viewer,
     supabase: createAdminClient(),
