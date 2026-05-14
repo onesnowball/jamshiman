@@ -41,6 +41,10 @@ export interface Database {
           role: UserRole
           is_banned: boolean
           handle: string | null
+          academic_status: 'masters' | 'phd' | 'postdoc' | 'other_grad' | null
+          onboarding_completed: boolean
+          onboarding_completed_at: string | null
+          grad_attested_at: string | null
           created_at: string
         }
         Insert: Omit<users['Row'], 'created_at'>

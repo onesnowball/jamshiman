@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus, UserCircle, Shield, Mail, ChevronDown, Layers } from 'lucide-react'
+import { GraduationCap, Calendar, MessageSquare, Search, BookOpen, Plus, UserCircle, Shield, Mail, ChevronDown, Layers, Moon } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState, useRef, useEffect } from 'react'
 
@@ -34,6 +34,7 @@ export function NavbarClient({
   }, [])
 
   const navItems = s ? [
+    { href: `/${s}/pulse`,       label: 'Pulse',       icon: Moon },
     { href: `/${s}/advisors`,    label: 'Advisors',    icon: Search },
     { href: `/${s}/departments`, label: 'Departments', icon: Layers },
     { href: `/${s}/courses`,     label: 'Courses',     icon: BookOpen },

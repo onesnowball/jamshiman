@@ -7,6 +7,7 @@ import { getOptionalViewer } from '@/lib/server-auth'
 import { ProfileActivity } from '@/components/profile/ProfileActivity'
 import { HandleEditor } from '@/components/profile/HandleEditor'
 import type { AdvisorReview, CourseReview, Post, Comment, Schedule } from '@/types/database'
+import { isOnboarded } from '@/lib/onboarding'
 
 type ProfileAdvisorReview = AdvisorReview & {
   advisors: { id: string; name: string | null } | null
@@ -56,6 +57,7 @@ function EmptyState({
 export default async function ProfilePage() {
   const viewer = await getOptionalViewer()
   if (!viewer) redirect('/auth/login')
+  if (!isOnboarded(viewer as any)) redirect('/profile/onboarding')
 
   const supabase = createAdminClient()
 
@@ -95,6 +97,21 @@ export default async function ProfilePage() {
       .order('created_at', { ascending: false }),
   ])
 
+  const [{ data: xpRecentData }, { data: xpAllData }] = await Promise.all([
+    supabase
+      .from('user_xp_ledger' as any)
+      .select('event_type, points, created_at')
+      .eq('user_id', viewer.id)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase
+      .from('user_xp_ledger' as any)
+      .select('points')
+      .eq('user_id', viewer.id),
+  ])
+  const xpRows = (xpRecentData ?? []) as { event_type: string; points: number; created_at: string }[]
+  const xpTotal = ((xpAllData ?? []) as { points: number }[]).reduce((s, r) => s + r.points, 0)
+
   const advisorReviews = (advisorReviewsData ?? []) as ProfileAdvisorReview[]
   const courseReviews = (courseReviewsData ?? []) as ProfileCourseReview[]
   const posts = (postsData ?? []) as ProfilePost[]
@@ -118,6 +135,7 @@ export default async function ProfilePage() {
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <span className="badge-blue">{viewer.role === 'admin' ? 'Admin' : 'Student'}</span>
                 {viewer.degree_type && <span className="badge-gray">{viewer.degree_type.toUpperCase()}</span>}
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-50 text-amber-800 border border-amber-200">{xpTotal} Campus XP ✨</span>
               </div>
               <div className="mt-4">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Display name</p>
@@ -128,6 +146,22 @@ export default async function ProfilePage() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="card p-5">
+          <h2 className="font-medium text-gray-900 mb-3">Recent Campus XP ✨</h2>
+          {!xpRows.length ? (
+            <p className="text-xs text-gray-500">No XP yet. Check in or write a review to earn some.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {xpRows.map((r, i) => (
+                <li key={i} className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600">{r.event_type.replace(/_/g, ' ')}</span>
+                  <span className="text-gray-400">+{r.points} · {new Date(r.created_at).toLocaleDateString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="space-y-3">

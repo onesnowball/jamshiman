@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import { getOptionalViewer } from '@/lib/server-auth'
+import { isOnboarded } from '@/lib/onboarding'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { ComposeSearch } from '@/components/messages/ComposeSearch'
@@ -8,6 +9,7 @@ import { ComposeSearch } from '@/components/messages/ComposeSearch'
 export default async function ComposePage() {
   const viewer = await getOptionalViewer()
   if (!viewer) redirect('/auth/login')
+  if (!isOnboarded(viewer as any)) redirect('/profile/onboarding')
 
   const db = createAdminClient() as any
 

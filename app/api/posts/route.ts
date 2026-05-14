@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getActionClient } from '@/lib/server-auth'
 import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 import { domainToSlug } from '@/lib/school-slugs'
+import { awardXp } from '@/lib/xp/awardXp'
 
 const PostSchema = z.object({
   dept_id: z.string().uuid().optional(),
@@ -235,6 +236,15 @@ export async function POST(req: NextRequest) {
   }
 
   postUrl = `${postUrl}/${data.id}`
+
+  await awardXp({
+    userId: viewer.id,
+    universityId: viewer.university_id,
+    eventType: 'board_post_created',
+    sourceType: 'post',
+    sourceId: data.id,
+    idempotencyKey: `board_post_created:${data.id}`,
+  })
 
   return NextResponse.json({
     postId: data.id,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getActionClient } from '@/lib/server-auth'
+import { awardXp } from '@/lib/xp/awardXp'
 
 const CourseReviewSchema = z.object({
   course_id: z.string().uuid(),
@@ -68,6 +69,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await awardXp({
+    userId: viewer.id,
+    universityId: viewer.university_id,
+    eventType: 'course_review_submitted',
+    sourceType: 'course_review',
+    sourceId: (data as { id?: string } | null)?.id ?? null,
+    idempotencyKey: `course_review_submitted:${(data as { id?: string } | null)?.id ?? `${viewer.id}:${parsed.data.course_id}:${parsed.data.semester}`}`,
+  })
 
   return NextResponse.json({ review: data }, { status: 201 })
 }

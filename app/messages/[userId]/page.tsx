@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Navbar } from '@/components/Navbar'
 import { getOptionalViewer } from '@/lib/server-auth'
+import { isOnboarded } from '@/lib/onboarding'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { createAdminClient } from '@/lib/supabase/server'
 import { MessageCompose } from '@/components/messages/MessageCompose'
@@ -31,6 +32,7 @@ export default async function MessageThreadPage({
 }: { params: { userId: string } }) {
   const viewer = await getOptionalViewer()
   if (!viewer) redirect('/auth/login')
+  if (!isOnboarded(viewer as any)) redirect('/profile/onboarding')
 
   const db = createAdminClient() as any
   const { data } = await db

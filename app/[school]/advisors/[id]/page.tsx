@@ -8,6 +8,8 @@ import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
 import { RatingDisplay, StarRating } from '@/components/ui/StarRating'
 import { FlaskConical, GraduationCap, Plus, ShieldCheck } from 'lucide-react'
 import { FlagButton } from '@/components/FlagButton'
+import { AdvisorReviewRequestButton } from '@/components/advisors/AdvisorReviewRequestButton'
+import { EmptyStateIllustration } from '@/components/brand/EmptyStateIllustration'
 import type { Advisor, AdvisorRatings, AdvisorReview, Database } from '@/types/database'
 
 const RATING_LABELS: Record<string, string> = {
@@ -169,10 +171,22 @@ export default async function AdvisorPage({ params }: { params: { school: string
           </h2>
 
           {!reviews.length && (
-            <div className="card p-8 text-center text-gray-400">
-              <GraduationCap className="w-8 h-8 mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-medium text-gray-700 mb-1">Be the first to review this advisor.</p>
-              <p className="text-xs">Help future students understand the lab environment.</p>
+            <div className="card p-8">
+              <EmptyStateIllustration
+                variant="advisor_no_reviews"
+                title="No one has reviewed this lab yet ☕"
+                body="Be the first to help future students understand what it is like. Reviews stay anonymous and only appear in aggregate once privacy thresholds are met."
+              >
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <AdvisorReviewRequestButton advisorId={params.id} />
+                </div>
+              </EmptyStateIllustration>
+            </div>
+          )}
+
+          {reviews.length > 0 && reviews.length < 3 && (
+            <div className="flex items-center justify-end">
+              <AdvisorReviewRequestButton advisorId={params.id} />
             </div>
           )}
 

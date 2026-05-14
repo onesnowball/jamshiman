@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { createAdminClient } from '@/lib/supabase/server'
+import { isOnboarded } from '@/lib/onboarding'
 
 type Message = {
   id: string; sender_id: string; recipient_id: string
@@ -25,6 +26,7 @@ function timeAgo(dateStr: string): string {
 export default async function MessagesPage() {
   const viewer = await getOptionalViewer()
   if (!viewer) redirect('/auth/login')
+  if (!isOnboarded(viewer as any)) redirect('/profile/onboarding')
 
   const db = createAdminClient() as any
   const { data } = await db
