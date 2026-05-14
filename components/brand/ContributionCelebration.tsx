@@ -15,7 +15,7 @@ export function ContributionCelebration({
   show,
   message,
   onDone,
-  durationMs = 2600,
+  durationMs = 4800,
   confetti = true,
 }: {
   show: boolean
