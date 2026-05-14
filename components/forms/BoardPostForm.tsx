@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { AlertCircle, Loader2, Send, ShieldCheck } from 'lucide-react'
+import { queueCelebration } from '@/lib/celebrate'
 
 export function BoardPostForm({ deptId }: { deptId: string }) {
   const [title, setTitle] = useState('')
@@ -34,6 +35,7 @@ export function BoardPostForm({ deptId }: { deptId: string }) {
       setTitle('')
       setBody('')
       setIsAnonymous(true)
+      queueCelebration('post_created')
       window.location.href = data.postUrl
     } catch (err: any) {
       setError(err.message || 'Could not create post.')

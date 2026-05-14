@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, Loader2, Send } from 'lucide-react'
 import type { Department } from '@/types/database'
+import { queueCelebration } from '@/lib/celebrate'
 
 export function NewPostForm({ departments }: { departments: Department[] }) {
   const router = useRouter()
@@ -25,6 +26,7 @@ export function NewPostForm({ departments }: { departments: Department[] }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Could not post.')
+      queueCelebration('post_created')
       window.location.href = data.postUrl
     } catch (err: any) {
       setError(err.message || 'Could not post.')

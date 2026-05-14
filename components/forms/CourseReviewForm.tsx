@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { AlertCircle, CheckCircle, Loader2, ShieldCheck } from 'lucide-react'
 import { StarRating } from '@/components/ui/StarRating'
+import { ContributionCelebration } from '@/components/brand/ContributionCelebration'
 import type { Course, CourseRatings } from '@/types/database'
 
 const RATING_FIELDS: { key: keyof CourseRatings; label: string; description: string }[] = [
@@ -63,13 +64,16 @@ export function CourseReviewForm({
 
   if (step === 'done') {
     return (
-      <div className="flex flex-col items-center gap-4 py-10 text-center">
-        <CheckCircle className="w-12 h-12 text-green-500" />
-        <h3 className="text-lg font-medium text-gray-900">Course review submitted</h3>
-        <p className="text-sm text-gray-500 max-w-sm">
-          Thanks for sharing your experience with this course.
-        </p>
-      </div>
+      <>
+        <div className="flex flex-col items-center gap-4 py-10 text-center">
+          <CheckCircle className="w-12 h-12 text-green-500" />
+          <h3 className="text-lg font-medium text-gray-900">Course review submitted</h3>
+          <p className="text-sm text-gray-500 max-w-sm">
+            Thanks for sharing your experience with this course.
+          </p>
+        </div>
+        <ContributionCelebration show message="Course review live — tiny contribution, huge future-student energy 🌱" />
+      </>
     )
   }
 

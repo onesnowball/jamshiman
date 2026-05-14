@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, ShieldCheck } from 'lucide-react'
 import { StarRating } from '@/components/ui/StarRating'
+import { ContributionCelebration } from '@/components/brand/ContributionCelebration'
 import { clsx } from 'clsx'
 import type { Advisor, AdvisorRatings } from '@/types/database'
 
@@ -78,13 +79,16 @@ export function AdvisorReviewForm({ advisor, onSuccess }: Props) {
 
   if (step === 'done') {
     return (
-      <div className="flex flex-col items-center gap-4 py-10 text-center">
-        <CheckCircle className="w-12 h-12 text-green-500" />
-        <h3 className="text-lg font-medium text-gray-900">Review submitted</h3>
-        <p className="text-sm text-gray-500 max-w-sm">
-          Thank you. Your review will appear once enough reviews exist for this advisor.
-        </p>
-      </div>
+      <>
+        <div className="flex flex-col items-center gap-4 py-10 text-center">
+          <CheckCircle className="w-12 h-12 text-green-500" />
+          <h3 className="text-lg font-medium text-gray-900">Review submitted</h3>
+          <p className="text-sm text-gray-500 max-w-sm">
+            Thank you. Your review will appear once enough reviews exist for this advisor.
+          </p>
+        </div>
+        <ContributionCelebration show message="You helped future students make a better decision ✨" />
+      </>
     )
   }
 

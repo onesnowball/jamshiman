@@ -49,7 +49,7 @@ export function JamMascot({
     <span
       role="img"
       aria-label={p.label}
-      className={clsx('inline-block motion-safe:animate-[jam-float_4s_ease-in-out_infinite]', className)}
+      className={clsx('inline-block motion-safe:animate-[jam-float_2.4s_ease-in-out_infinite]', className)}
       style={{ width: px, height: px }}
     >
       <svg viewBox="0 0 64 64" width={px} height={px} shapeRendering="crispEdges">
@@ -62,7 +62,13 @@ export function JamMascot({
         <rect x="14" y="38" width="6" height="4" rx="2" fill={p.accent} opacity="0.7" />
         <rect x="44" y="38" width="6" height="4" rx="2" fill={p.accent} opacity="0.7" />
       </svg>
-      <style>{`@keyframes jam-float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-3px) } }`}</style>
+      <style>{`@keyframes jam-float {
+        0%   { transform: translateY(0) rotate(-2deg) }
+        25%  { transform: translateY(-9px) rotate(2deg) }
+        50%  { transform: translateY(-2px) rotate(-2deg) }
+        75%  { transform: translateY(-7px) rotate(3deg) }
+        100% { transform: translateY(0) rotate(-2deg) }
+      }`}</style>
     </span>
   )
 }
