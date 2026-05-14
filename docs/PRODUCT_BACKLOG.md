@@ -10,23 +10,16 @@ Last updated: 2026-05-15
 
 ## On deck (next session candidate, pre-decided)
 
-### Department activity signals
-Make quiet department pages read as **alive** rather than **abandoned**
-at <50 users, without needing more users to achieve it.
-
-- **Part A:** "Last activity: N days ago" line under the department
-  name on the department detail page. Always shown.
-- **Part B:** 12-week activity strip (Detroit-week buckets). Only
-  shown when ≥3 of the last 12 weeks have ≥1 item.
-
-Ship in **two separate commits** (line first, strip second). No schema
-changes. Reuse existing Detroit TZ helper from `lib/pulse/date.ts`.
-
-Source: planning session 2026-05-15.
+_Empty. Next planning session needed._
 
 ---
 
 ## Shipped (recent)
+
+- 2026-05-15 — **Department activity signals**: "last activity" line
+  + 12-week GitHub-contrib-style strip (suppressed unless ≥3 of last
+  12 weeks have activity). Two commits: ead58ef (Part A) and 8c0a35d
+  (Part B). Detroit-week math in `lib/pulse/date.ts`. No schema change.
 
 - 2026-05-14 — **Grad Pulse V1**: onboarding, daily check-in,
   k-anonymity aggregate dashboard, XP scaffold, advisor request-review,
