@@ -4,8 +4,9 @@ import { GraduationCap, BookOpen, MessageSquare, Plus, ArrowRight, FlaskConical 
 import { createAdminClient } from '@/lib/supabase/server'
 import { getUniversityBySlug } from '@/lib/school'
 import { RatingDisplay } from '@/components/ui/StarRating'
-import { getLastDepartmentActivity } from '@/lib/department-activity'
+import { getLastDepartmentActivity, getDepartmentWeeklyActivity } from '@/lib/department-activity'
 import { LastActivityLine } from '@/components/department/LastActivityLine'
+import { ActivityStrip } from '@/components/department/ActivityStrip'
 import type { Course, CourseRatings } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -86,7 +87,10 @@ export default async function DepartmentPage({
       .select('advisor_id, review_count, avg_overall'),
   ])
 
-  const lastActivity = await getLastDepartmentActivity(supabase as any, department.id)
+  const [lastActivity, weeklyActivity] = await Promise.all([
+    getLastDepartmentActivity(supabase as any, department.id),
+    getDepartmentWeeklyActivity(supabase as any, department.id),
+  ])
 
   const primaryList = (advisorsPrimaryData ?? []) as {
     id: string; name: string; title: string | null; lab_name: string | null; research_areas: string[]; dept_id: string
@@ -171,6 +175,7 @@ export default async function DepartmentPage({
         <h1 className="text-2xl font-semibold text-gray-900">{department.name}</h1>
         <div className="mt-1">
           <LastActivityLine lastActivity={lastActivity} />
+          {lastActivity && <ActivityStrip weeks={weeklyActivity} />}
         </div>
         <p className="text-sm text-gray-500 mt-2 max-w-lg">
           Advisor reviews, course advice, and anonymous department discussion from verified students.
