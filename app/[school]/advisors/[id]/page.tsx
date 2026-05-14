@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getUniversityBySlug } from '@/lib/school'
 import { formatAdvisorDepartmentLine } from '@/lib/advisor-departments'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 import { AdvisorReviewForm } from '@/components/forms/AdvisorReviewForm'
 import { RatingDisplay, StarRating } from '@/components/ui/StarRating'
 import { FlaskConical, GraduationCap, Plus, ShieldCheck } from 'lucide-react'
@@ -48,6 +50,7 @@ const RELATIONSHIP_LABEL: Record<string, string> = {
 }
 
 export default async function AdvisorPage({ params }: { params: { school: string; id: string } }) {
+  noStore()
   const supabase = createAdminClient()
   const university = await getUniversityBySlug(params.school)
   if (!university) notFound()

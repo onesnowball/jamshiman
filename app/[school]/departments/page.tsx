@@ -3,10 +3,13 @@ import Link from 'next/link'
 import { Layers, GraduationCap, BookOpen, ArrowRight } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getUniversityBySlug } from '@/lib/school'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function DepartmentsPage({ params }: { params: { school: string } }) {
+  noStore()
   const university = await getUniversityBySlug(params.school)
   if (!university) notFound()
 

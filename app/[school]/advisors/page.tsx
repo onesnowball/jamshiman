@@ -3,12 +3,15 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { getUniversityBySlug } from '@/lib/school'
 import { buildExtraDeptNamesByAdvisor, formatAdvisorDepartmentLine } from '@/lib/advisor-departments'
 import { notFound } from 'next/navigation'
+import { unstable_noStore as noStore } from 'next/cache'
 
 // Always fetch fresh — no cookies() call here so Next.js would otherwise
 // cache the Supabase query and serve stale results after new advisors are added.
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function AdvisorsPage({ params }: { params: { school: string } }) {
+  noStore()
   const university = await getUniversityBySlug(params.school)
   if (!university) notFound()
 

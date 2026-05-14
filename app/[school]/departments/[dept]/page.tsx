@@ -9,8 +9,10 @@ import { getRecentDetroitWeekStarts } from '@/lib/pulse/date'
 import { LastActivityLine } from '@/components/department/LastActivityLine'
 import { ActivityStrip } from '@/components/department/ActivityStrip'
 import type { Course, CourseRatings } from '@/types/database'
+import { unstable_noStore as noStore } from 'next/cache'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 function timeAgo(dateStr: string): string {
   const days = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
@@ -28,6 +30,7 @@ export default async function DepartmentPage({
   params: { school: string; dept: string }
   searchParams?: { demo_strip?: string }
 }) {
+  noStore()
   const university = await getUniversityBySlug(params.school)
   if (!university) notFound()
 
