@@ -6,7 +6,7 @@ export function PulseLockedState() {
       <EmptyStateIllustration
         variant="pulse_locked"
         title="Today's stats are hidden until you check in 🫧"
-        body="This keeps Grad Pulse useful instead of lurker-only. Anonymous aggregate stats unlock the moment you contribute."
+        body="Anonymous aggregate stats unlock the moment you contribute. Lurker-mode off, just for a moment ✨"
       />
     </div>
   )

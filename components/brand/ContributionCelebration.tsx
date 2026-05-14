@@ -6,7 +6,7 @@ import { JamMascot } from './JamMascot'
 const MESSAGES = [
   'You helped future students make a better decision ✨',
   'Tiny contribution, huge future-student energy 🌱',
-  'Grad Pulse updated. The campus feels slightly less alone 🫧',
+  'jamshiman updated. The campus feels slightly less alone 🫧',
   'Thank you — anonymous knowledge only works when people contribute ☕',
 ]
 

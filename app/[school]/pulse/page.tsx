@@ -15,7 +15,7 @@ export default async function PulsePage({ params }: { params: { school: string }
     <main className="max-w-5xl mx-auto px-4 py-8 page-enter">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">How cooked are you today? 🔥</h1>
-        <p className="text-sm text-gray-500 mt-1">Check in anonymously to unlock today&apos;s {university.name} grad pulse.</p>
+        <p className="text-sm text-gray-500 mt-1">Check in anonymously to unlock today&apos;s {university.name} pulse. <span className="text-gray-400">jamshiman — just a moment ✨</span></p>
       </div>
       <PulseDashboardClient schoolSlug={params.school} />
     </main>

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { ProfileActivity } from '@/components/profile/ProfileActivity'
 import { HandleEditor } from '@/components/profile/HandleEditor'
+import { SignOutButton } from '@/components/profile/SignOutButton'
 import type { AdvisorReview, CourseReview, Post, Comment, Schedule } from '@/types/database'
 import { isOnboarded } from '@/lib/onboarding'
 
@@ -128,10 +129,15 @@ export default async function ProfilePage() {
               {viewer.handle ? viewer.handle.slice(0, 2).toUpperCase() : (viewer.email?.slice(0, 2).toUpperCase() ?? '??')}
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-semibold text-gray-900">Your profile</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Verified via {viewer.email}. This page stays private to you.
-              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl font-semibold text-gray-900">Your profile</h1>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Verified via {viewer.email}. This page stays private to you.
+                  </p>
+                </div>
+                <SignOutButton />
+              </div>
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <span className="badge-blue">{viewer.role === 'admin' ? 'Admin' : 'Student'}</span>
                 {viewer.degree_type && <span className="badge-gray">{viewer.degree_type.toUpperCase()}</span>}

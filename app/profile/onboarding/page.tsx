@@ -43,7 +43,7 @@ export default async function OnboardingPage() {
         </div>
 
         <p className="text-[11px] text-gray-400 mt-4 leading-relaxed text-center">
-          We do not ask for your lab, advisor, cohort, or exact research group. Your profile is only used to keep Grad Pulse stats anonymous and meaningful. UMich email verifies school membership — graduate status is self-attested.
+          We do not ask for your lab, advisor, cohort, or exact research group. Your profile is only used to keep jamshiman stats anonymous and meaningful. UMich email verifies school membership — graduate status is self-attested.
         </p>
       </main>
     </div>
