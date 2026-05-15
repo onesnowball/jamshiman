@@ -5,48 +5,85 @@ import { usePathname } from 'next/navigation'
 import { Jami, type JamiState } from './Jami'
 
 /* ─────────────────────────────────────────────────────────────────────
-   Persistent ground-floor capybara that lurks across the bottom edge.
+   Persistent ground-floor capybara.
 
-   Built on the new <Jami> sprite system. Available animation states are
-   idle / walking / sleeping / stretching / sitting.
+   ── Vibe ──
+   This capybara is RELAXED. It mostly sleeps. It sometimes sits. It
+   walks sideways once in a while. State changes are measured in
+   minutes, not seconds. No stretching, no kicking, no carrots
+   chasing — just a sleepy little corner companion.
 
-   Lifecycle:
-     sleeping → stretching → idle → walking → idle → sitting → sleeping
-                                    ↘ if carrot spawned: → walking-to-carrot → sitting (eats)
+   Only horizontal (left/right) motion. No vertical jumps or stretches.
 
-   Click the × in the tooltip to dismiss for the session.
+   ── States ──
+   - sleeping  → long deep nap (1.5–3 minutes)
+   - sitting   → quiet, watchful (1–2 minutes)
+   - idle      → brief between-state pause (8–18 seconds)
+   - walking   → short stroll in one direction (5–9 seconds), then rest
+
+   ── Carrot scene ──
+   Very rare (~1 in 25 idle transitions). Even then, no chasing —
+   the capybara just walks toward it once, sits, the carrot fades.
 
    Art credit: sprite frames from Rainloaf's "Simple Capybara Sprite Sheet"
-   (https://rainloaf.itch.io/capybara-sprite-sheet) — credited in the
-   tooltip below per the asset license.
+   (https://rainloaf.itch.io/capybara-sprite-sheet) — credit shown in tooltip.
    ───────────────────────────────────────────────────────────────────── */
 
 type Activity =
   | { kind: 'sleeping' }
-  | { kind: 'waking' } // stretching frames
-  | { kind: 'idle' }
   | { kind: 'sitting' }
+  | { kind: 'idle' }
   | { kind: 'walking'; facing: 'left' | 'right' }
   | { kind: 'going-to-carrot' }
-  | { kind: 'eating' } // sit + carrot fades
+  | { kind: 'eating' }
+
+// Durations in ms. Numbers chosen to feel SLOW.
+const DURATIONS = {
+  sleeping: { min: 90_000,  max: 180_000 },  // 1.5–3 min
+  sitting:  { min: 60_000,  max: 120_000 },  // 1–2 min
+  idle:     { min:  8_000,  max:  18_000 },  // brief check-in
+  walking:  { min:  5_000,  max:   9_000 },  // short stroll
+}
+
+// Probability weights for what idle transitions INTO.
+// Heavily biased toward rest states.
+const NEXT_FROM_IDLE = [
+  { kind: 'sleeping' as const, weight: 55 },  // mostly sleep
+  { kind: 'sitting'  as const, weight: 35 },  // sometimes sit
+  { kind: 'walking'  as const, weight: 9  },  // rarely walk
+  { kind: 'carrot'   as const, weight: 1  },  // very rarely a carrot
+]
 
 const ZONE_WIDTH = 380
 const ZONE_PADDING = 16
-const SPRITE_W = 128 // CSS pixels (Jami renders 32x32 scaled up; integer multiples stay crisp)
+const SPRITE_W = 128
 
 function clampX(x: number) {
   const max = ZONE_WIDTH - SPRITE_W - ZONE_PADDING
   return Math.max(ZONE_PADDING, Math.min(max, x))
 }
 
+function pickWeighted<T extends { weight: number }>(items: T[]): T {
+  const total = items.reduce((s, i) => s + i.weight, 0)
+  let r = Math.random() * total
+  for (const it of items) {
+    r -= it.weight
+    if (r <= 0) return it
+  }
+  return items[items.length - 1]
+}
+
+function rand(min: number, max: number) {
+  return min + Math.random() * (max - min)
+}
+
 const TIP: Record<Activity['kind'], string> = {
   sleeping: 'shhh… 🌙',
-  waking: 'good morning',
-  idle: 'just lurking 🫧',
-  sitting: 'thinking',
-  walking: 'pitter patter',
-  'going-to-carrot': 'is that a carrot?? 🥕',
-  eating: 'nom nom 🥕',
+  sitting:  'just watching',
+  idle:     'mm…',
+  walking:  'pitter patter',
+  'going-to-carrot': 'oh… a carrot 🥕',
+  eating:   'nom nom 🥕',
 }
 
 export function CapybaraLurker() {
@@ -78,71 +115,69 @@ export function CapybaraLurker() {
     }
   }, [])
 
-  // Activity scheduler: when activity changes, schedule the next transition.
+  // Activity scheduler.
   useEffect(() => {
     if (hide || dismissed) return
     clearAllTimers()
 
     if (activity.kind === 'sleeping') {
-      later(() => setActivity({ kind: 'waking' }), 8000 + Math.random() * 8000)
-    } else if (activity.kind === 'waking') {
-      later(() => setActivity({ kind: 'idle' }), 1300)
+      later(() => setActivity({ kind: 'idle' }), rand(DURATIONS.sleeping.min, DURATIONS.sleeping.max))
+    } else if (activity.kind === 'sitting') {
+      later(() => setActivity({ kind: 'idle' }), rand(DURATIONS.sitting.min, DURATIONS.sitting.max))
     } else if (activity.kind === 'idle') {
       later(() => {
-        const roll = Math.random()
-        if (roll < 0.30) setActivity({ kind: 'sleeping' })
-        else if (roll < 0.55) setActivity({ kind: 'sitting' })
-        else if (roll < 0.85) {
+        const next = pickWeighted(NEXT_FROM_IDLE)
+        if (next.kind === 'sleeping') setActivity({ kind: 'sleeping' })
+        else if (next.kind === 'sitting') setActivity({ kind: 'sitting' })
+        else if (next.kind === 'walking') {
+          // Pick whichever direction has more room to wander.
           const direction: 'left' | 'right' = x > ZONE_WIDTH / 2 ? 'left' : 'right'
           setFacing(direction)
           setActivity({ kind: 'walking', facing: direction })
         } else {
-          // Spawn a carrot and pursue it
+          // carrot
           const carrotX = clampX(Math.random() * (ZONE_WIDTH - SPRITE_W - ZONE_PADDING * 2) + ZONE_PADDING)
           setCarrot({ x: carrotX })
           setFacing(carrotX < x ? 'left' : 'right')
           setActivity({ kind: 'going-to-carrot' })
         }
-      }, 3500 + Math.random() * 3500)
-    } else if (activity.kind === 'sitting') {
-      later(() => setActivity({ kind: 'idle' }), 3000 + Math.random() * 2500)
+      }, rand(DURATIONS.idle.min, DURATIONS.idle.max))
     } else if (activity.kind === 'walking') {
-      later(() => setActivity({ kind: 'idle' }), 3500 + Math.random() * 2000)
+      later(() => setActivity({ kind: 'idle' }), rand(DURATIONS.walking.min, DURATIONS.walking.max))
     } else if (activity.kind === 'eating') {
-      // Sit while the carrot fades away over ~1.8s, then go idle.
       later(() => setCarrot(null), 900)
-      later(() => setActivity({ kind: 'idle' }), 1800)
+      later(() => setActivity({ kind: 'sitting' }), 1800)
     }
-    // going-to-carrot: position watcher below transitions to eating.
+    // going-to-carrot: handled by position watcher below
 
     return clearAllTimers
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activity, dismissed, hide])
 
-  // Position tick: scoot x while walking or pursuing a carrot.
+  // Position tick — only while moving. Sideways only.
   useEffect(() => {
     if (hide || dismissed) return
     if (activity.kind !== 'walking' && activity.kind !== 'going-to-carrot') return
-    const step = 1.4
+    const step = 1.0 // slower, more relaxed pace
     const id = window.setInterval(() => {
       setX(prev => {
         let nx = prev + (facing === 'right' ? step : -step)
         const min = ZONE_PADDING
         const max = ZONE_WIDTH - SPRITE_W - ZONE_PADDING
         if (activity.kind === 'walking') {
-          if (nx <= min) { setFacing('right'); nx = min }
-          if (nx >= max) { setFacing('left'); nx = max }
+          // Don't bounce; just stop at the wall and idle out naturally.
+          if (nx <= min) nx = min
+          if (nx >= max) nx = max
         }
         if (activity.kind === 'going-to-carrot' && carrot) {
-          const dist = Math.abs(nx - carrot.x)
-          if (dist < 8) {
+          if (Math.abs(nx - carrot.x) < 8) {
             setActivity({ kind: 'eating' })
             return carrot.x
           }
         }
         return nx
       })
-    }, 35)
+    }, 50)
     return () => window.clearInterval(id)
   }, [activity, facing, carrot, hide, dismissed])
 
@@ -154,10 +189,11 @@ export function CapybaraLurker() {
   }
 
   // Map activity → Jami sprite state.
+  // We intentionally don't use 'stretching' — it's a vertical animation
+  // and we want only sideways motion.
   let jamiState: JamiState
   switch (activity.kind) {
     case 'sleeping':         jamiState = 'sleeping'; break
-    case 'waking':           jamiState = 'stretching'; break
     case 'sitting':
     case 'eating':           jamiState = 'sitting'; break
     case 'walking':
@@ -172,7 +208,6 @@ export function CapybaraLurker() {
       className="fixed bottom-0 right-0 z-40 pointer-events-none select-none"
       style={{ width: ZONE_WIDTH, height: 96 }}
     >
-      {/* Carrot — fades out while eating */}
       {carrot && (
         <div
           className="absolute pointer-events-none"
@@ -187,13 +222,12 @@ export function CapybaraLurker() {
         </div>
       )}
 
-      {/* Capybara */}
       <div
         className="absolute pointer-events-auto cursor-pointer"
         style={{
           left: x,
           bottom: 4,
-          transition: 'left 60ms linear',
+          transition: 'left 80ms linear',
           transform: flip ? 'scaleX(-1)' : undefined,
           transformOrigin: 'center',
         }}
@@ -232,14 +266,11 @@ export function CapybaraLurker() {
   )
 }
 
-/** Tiny inline carrot — kept here since it's the only place using it. */
 function CarrotSvg({ size = 18 }: { size?: number }) {
   return (
     <svg viewBox="0 0 7 7" width={size} height={size * (7 / 7)} shapeRendering="crispEdges" aria-hidden>
-      {/* leaves */}
       <rect x="2" y="0" width="3" height="1" fill="#5BA552" />
       <rect x="2" y="1" width="3" height="1" fill="#5BA552" />
-      {/* body */}
       <rect x="1" y="2" width="5" height="1" fill="#FFA94D" />
       <rect x="1" y="3" width="5" height="1" fill="#FFA94D" />
       <rect x="2" y="4" width="3" height="1" fill="#FFA94D" />
