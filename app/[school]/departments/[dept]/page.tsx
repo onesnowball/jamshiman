@@ -196,13 +196,26 @@ export default async function DepartmentPage({
         <p className="text-sm text-gray-500 mt-2 max-w-lg">
           Advisor reviews, course advice, and anonymous department discussion from verified students.
         </p>
+
+        {/* Jump nav — avoids long scroll past advisors to reach courses/posts */}
+        <nav aria-label="Sections" className="mt-4 flex flex-wrap gap-1.5 text-xs">
+          <a href="#advisors" className="px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-700 transition-colors">
+            Advisors <span className="text-gray-400">({advisors.length})</span>
+          </a>
+          <a href="#courses" className="px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-700 transition-colors">
+            Courses <span className="text-gray-400">({courses.length})</span>
+          </a>
+          <a href="#posts" className="px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-700 transition-colors">
+            Recent posts <span className="text-gray-400">({posts.length})</span>
+          </a>
+        </nav>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
 
           {/* Advisors */}
-          <section className="space-y-3">
+          <section id="advisors" className="space-y-3 scroll-mt-20">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-brand-600" />
@@ -266,7 +279,7 @@ export default async function DepartmentPage({
           </section>
 
           {/* Courses */}
-          <section className="space-y-3">
+          <section id="courses" className="space-y-3 scroll-mt-20">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-brand-600" />
@@ -328,7 +341,7 @@ export default async function DepartmentPage({
           </section>
 
           {/* Department discussion */}
-          <section className="space-y-3">
+          <section id="posts" className="space-y-3 scroll-mt-20">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-brand-600" />
