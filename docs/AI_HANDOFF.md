@@ -1,8 +1,28 @@
-# GradPeer / jamshiman Engineering + Product Handoff
+# jamshiman Engineering + Product Handoff
 
-Last updated: 2026-05-13
+Last updated: 2026-05-15
 
 This handoff is for future AI coding agents working locally in this repo. It intentionally focuses on product behavior, route wiring, data models, school scoping, anonymity, moderation, and likely next feature work. It does not cover Vercel deployment status or production hosting.
+
+**App name reminder:** the app is called `jamshiman` only — never "GradPeer" or "Grad Pulse" in user-facing copy. "GradPeer" lingers as the internal repo name; ignore it for UI work.
+
+**Companion docs:**
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — patterns, invariants, trust model. **Read before touching code.**
+- [`CODE_QUALITY_REPORT.md`](CODE_QUALITY_REPORT.md) — current cleanup queue with P0–P3 priorities.
+- [`PRODUCT_BACKLOG.md`](PRODUCT_BACKLOG.md) — what's queued/shipped/skipped.
+- [`UX_REVIEW_2026-05-15.md`](UX_REVIEW_2026-05-15.md) — known user-flow issues.
+
+## 0. What changed since this handoff was first written
+
+If you last saw this doc dated 2026-05-13, here's what shipped between then and 2026-05-15:
+
+- **Grad Pulse V1** — onboarding, daily anonymous check-in, k-anonymity Pulse dashboard, XP scaffold, advisor "request a review", Jami mascot system, confetti, contribution celebrations. See §2 row for Pulse.
+- **UMich MechE seeded** — 101 faculty + 74 graduate courses via migrations 020–025. The dept page `/umich/departments/meche` is now a real test ground for the IA.
+- **Auth refresh** — `@supabase/ssr` upgraded 0.3 → 0.10. Session refresh in middleware. Users now persist across browser restarts.
+- **Cache fix** — staleTimes + Cache-Control + noStore on school routes (after a stale-router-cache bug bit a user). Detailed in ARCHITECTURE.md §6.
+- **IA cleanup** — departments became a tag, not a tab. Dept page is a curated summary with research-area chips + capped lists; global advisor/course pages accept `?dept=` and `?area=` filters.
+- **Sign-out button** on `/profile`.
+- **Bottom-right capybara lurker** (CapybaraLurker) that wanders the corner, sleeps, eats carrots. Click × on its tooltip to dismiss for the session.
 
 ## 1. One-Paragraph Product Summary
 
@@ -28,6 +48,11 @@ GradPeer / jamshiman is a verified university platform for advisor reviews, lab 
 | Search | Partial | Search/filter advisors, courses, boards locally | Advisors/courses/boards pages | `AdvisorSearch`, `CourseSearch`, `BoardFeed`, `ComposeSearch` | No global cross-feature search found. |
 | Notifications / unread indicators | Partial | Message unread badges | `/messages`, navbar profile/messages area | `app/messages/page.tsx`, `NavbarClient` | No review-request notifications, digests, or cross-feature notification center found. |
 | Admin/moderation affecting normal users | Exists | Content removal, pinned/archived posts, user suspension, appeals | `/[school]/admin/*`, `/api/admin/*`, `/api/appeal` | `app/[school]/admin/*`, admin components, `SuspensionBanner` | Campus admins and global admins differ. Suspended users are blocked from key mutations and can appeal. |
+| Grad onboarding | Exists | Pick academic status, primary dept, handle, attest grad status | `/profile/onboarding` | `app/profile/onboarding/page.tsx`, `components/profile/GradOnboardingForm.tsx`, `app/api/profile/onboarding/route.ts`, `lib/onboarding.ts` | Required before any school-scoped or messages route is accessible. |
+| Grad Pulse (daily check-in + anonymous dashboard) | Exists | Submit daily mood/sleep/stress check-in, view anonymous campus aggregates | `/[school]/pulse` | `app/[school]/pulse/page.tsx`, `components/pulse/*`, `app/api/pulse/*`, `lib/pulse/*` | k≥5 anonymity. Detroit-timezone day boundary. Check-in unlocks today's stats; deleting it relocks them. |
+| Campus XP (private contribution rewards) | Exists | Earn idempotent XP for onboarding, check-ins, reviews, posts, review-requests | `/profile`, `/[school]/pulse` | `lib/xp/awardXp.ts`, `user_xp_ledger` table, XP pill on profile | No public leaderboard. XP cannot be farmed via re-submission. |
+| Advisor review-request signal | Exists | Click "Request a review" on an advisor with few reviews | `/[school]/advisors/[id]` | `components/advisors/AdvisorReviewRequestButton.tsx`, `app/api/advisors/[id]/request-review/route.ts` | One request per user per advisor (DB-unique). Rolling count display. |
+| Brand mascot / celebrations | Exists | Sees Jami capybara mascot, confetti on contribution | All authed pages (bottom-right Lurker) | `components/brand/*` | Drop-in art replaceable via `public/brand/jami/*.svg` when designer assets exist. |
 
 ## 3. Route-to-File Map
 
@@ -347,17 +372,20 @@ Legacy root routes such as `/advisors`, `/courses`, `/boards`, `/schedule`, and 
 
 ## 13. Recommended Immediate Sprint
 
-Sprint goal: Make one Michigan department page feel alive enough for a small grad-student beta.
+**The original sprint goal (make a UMich dept page feel alive) is done.**
+Migration 024 seeded 101 MechE faculty, 025 seeded 74 grad courses, the
+dept page was redesigned 2026-05-15 (research-area chips, capped lists,
+?dept= filter chain). See `PRODUCT_BACKLOG.md` for current state.
 
-| Item | Exact goal | Likely files/routes to touch | Expected user-facing outcome | Risk/caution |
-|---|---|---|---|---|
-| 1 | Upgrade `/umich/departments/[dept]` into a stronger department home | `app/[school]/departments/[dept]/page.tsx` | A student sees useful sections for advisors, courses, recent discussion, and survival prompts | Keep all queries scoped to URL school's `university.id`; do not blend departments with board categories accidentally. |
-| 2 | Add department survival prompt chips | department detail, board new form/linking | Users can start posts like quals, funding, TA load, lab rotations, housing | Reuse existing board post flow and preserve anonymous toggle. |
-| 3 | Improve empty advisor/course sections | department detail, advisor/course card snippets | Empty content still suggests meaningful next action | Avoid implying reviews exist when counts are zero. |
-| 4 | Add request-review UI for advisors/courses as a small demand signal | advisor/course cards/detail pages, likely new API/table | Users can say "I want a review" without writing one | Must prevent duplicate requests per user/target and keep school scoping. |
-| 5 | Surface course discussion starters on department page | department detail, course discussion links | Department page links to course-specific questions even with few reviews | Ensure course discussions use `board_type='course'` and `course_id`. |
-| 6 | Add trust/anonymity microcopy near first contribution CTAs | review forms, post form, department page | Users understand verified login vs anonymous display | Do not expose private identity or overpromise anonymity beyond current implementation. |
-| 7 | Validate core flows locally | `npm run lint`, `npm run build`, targeted manual pages | Basic regressions caught before handoff/deploy | Build may touch `.next`; ignore generated churn unless user asks. |
+Next-up work, in priority order:
+
+| Rank | Item | Where | Effort |
+|---|---|---|---|
+| 1 | P0/P1 cleanup pass (see CODE_QUALITY_REPORT.md) — types, is_banned audit, legacy-route deletion | `types/database.ts`, `app/api/*`, `app/{advisors,courses,boards,schedule}/page.tsx` | ~3 hours total |
+| 2 | UX_REVIEW top 4 fixes — kill duplicate handle setup, surface Pulse on school home, fix recent-post links, mobile lurker safe-area | `app/auth/login/page.tsx`, `app/[school]/page.tsx`, `CapybaraLurker.tsx` | ~2 hours total |
+| 3 | Plan next major feature with Claude.ai using PRODUCT_BACKLOG.md to avoid re-pitching skipped ideas | — | planning session |
+| 4 | Seed second department (e.g., EECS) — same pattern as MechE: faculty + 500/600-level courses migrations | new migrations 026/027 | data-only |
+| 5 | RLS hardening pass (defense-in-depth) — see ARCHITECTURE.md §2.2 | every migration | medium |
 
 ## 14. What Future AI Agents Should Be Careful Not To Break
 
@@ -376,6 +404,15 @@ Sprint goal: Make one Michigan department page feel alive enough for a small gra
 | Campus admin vs global admin permissions | `getAdminViewer`, `canAdminUniversity`, `requireAdminUniversity`, `campus_admins` table | Do not give campus admins global capabilities. |
 | School slug canonicalization | `lib/school-slugs.ts`, `middleware.ts` | Reserved top-level segments prevent routes like `/advisors` becoming fake schools. |
 | Department/course/advisor school integrity | `016_school_scoping_integrity.sql` triggers | When adding tables, mirror these constraints where possible. |
+| Pulse k-anonymity (≥5) | `lib/pulse/privacy.ts`, `/api/pulse/summary/route.ts` | Never expose dept/status aggregates below k=5. School-wide stats also gated. |
+| No raw check-in exposure | `/api/pulse/summary/route.ts`, `/api/pulse/me/today/route.ts` | Only return aggregates publicly; user can read only their own row. |
+| Pulse uses Detroit timezone | `lib/pulse/date.ts` | Day boundaries are America/Detroit, not UTC. Check-in editability and aggregate buckets both use it. |
+| XP idempotency | `lib/xp/awardXp.ts` + unique `(user_id, idempotency_key)` constraint | Every award call must produce a stable, action-specific key. No double-awards via refresh. |
+| One advisor-review-request per user/advisor | DB unique on `advisor_review_requests` | Optimistic count increment must reconcile if server denies. |
+| Onboarding gate | `app/[school]/layout.tsx`, `/profile/*`, `/messages/*` | If you add a top-level authed route, gate it. Pattern in ARCHITECTURE.md §5. |
+| Session refresh | `middleware.ts` | Don't remove the `refreshSession()` call — users will silently log out after 1h. |
+| Brand asset swap point | `components/brand/JamMascot.tsx`, `CapybaraSprite.tsx` | Mascot internals must stay in one place so designer SVGs can drop in without touching pages. |
+| No "GradPeer" or "Grad Pulse" in UI | Anywhere user-visible | App name is `jamshiman` only. Pulse as a feature label is fine. |
 
 ## 15. Final Handoff Summary
 
