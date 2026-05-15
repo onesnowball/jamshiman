@@ -1,6 +1,13 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Search, GraduationCap, BookOpen, MessageSquare, Layers, ArrowRight, Plus } from 'lucide-react'
+import {
+  Search,
+  GraduationCap,
+  BookOpen,
+  Layers,
+  Plus,
+  ArrowUpRight,
+} from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getOptionalViewer } from '@/lib/server-auth'
 import { getUniversityBySlug, slugToDomain } from '@/lib/school'
@@ -18,8 +25,6 @@ export default async function SchoolHomePage({ params }: { params: { school: str
     getOptionalViewer(),
   ])
   if (!university) notFound()
-
-  // Unauthenticated visitors → redirect to login
   if (!viewer) redirect(`/auth/login?school=${slugToDomain(params.school)}`)
 
   const supabase = createAdminClient()
@@ -69,184 +74,255 @@ export default async function SchoolHomePage({ params }: { params: { school: str
   ])
 
   const quickActions = [
-    { href: `/${params.school}/advisors`,    icon: GraduationCap, label: 'Find an advisor',       desc: 'Search reviews by name or lab' },
-    { href: `/${params.school}/departments`, icon: Layers,        label: 'Browse your department', desc: 'Advisors, courses, and discussion' },
-    { href: `/${params.school}/courses`,     icon: BookOpen,      label: 'Review a course',        desc: 'Share your experience' },
-    { href: `/${params.school}/boards/new`,  icon: Plus,          label: 'Ask anonymously',        desc: 'Post to your school\'s boards' },
+    { href: `/${params.school}/advisors`,    icon: GraduationCap, label: 'Find an advisor',     desc: 'Reviews by name or lab' },
+    { href: `/${params.school}/departments`, icon: Layers,        label: 'Browse departments',  desc: 'Advisors, courses, threads' },
+    { href: `/${params.school}/courses`,     icon: BookOpen,      label: 'Review a course',     desc: 'Share what taking it was like' },
+    { href: `/${params.school}/boards/new`,  icon: Plus,          label: 'Ask anonymously',     desc: 'Post to the boards' },
   ]
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8 page-enter space-y-8">
+    <>
+      {/* Inter for the body — quiet, professional. One @import keeps this
+          self-contained for the dashboard demo; if approved, this lifts to
+          app/layout.tsx so it applies site-wide. */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .font-inter { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      `}</style>
 
-      {/* Header */}
-      <div>
-        <p className="text-xs font-medium text-brand-600 uppercase tracking-wide mb-1">{university.name}</p>
-        <h1 className="text-2xl font-semibold text-gray-900">Welcome back</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Advisor reviews, course ratings, and anonymous boards — verified by your .edu email.
-        </p>
-      </div>
+      <main className="font-inter bg-stone-50 min-h-screen">
+        <div className="max-w-3xl mx-auto px-5 py-10 space-y-10">
 
-      {/* Pulse — surface daily check-in CTA so it's not buried in the nav */}
-      <SchoolHomePulseCard school={params.school} />
+          {/* Header */}
+          <header>
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-600">
+              {university.name}
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold text-stone-900 tracking-tight">
+              Welcome back
+            </h1>
+            <p className="mt-2 text-sm text-stone-600 leading-relaxed max-w-lg">
+              Advisor reviews, course ratings, and anonymous boards — verified by your .edu email.
+            </p>
+          </header>
 
-      {/* Search */}
-      <div>
-        <Link
-          href={`/${params.school}/advisors`}
-          prefetch={false}
-          className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-400 text-sm hover:border-brand-300 hover:shadow-sm transition-all"
-        >
-          <Search className="w-4 h-4 flex-shrink-0" />
-          Search advisors, courses, departments…
-        </Link>
-      </div>
+          {/* Pulse — surface daily check-in */}
+          <SchoolHomePulseCard school={params.school} />
 
-      {/* Quick actions */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Quick actions</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {quickActions.map(({ href, icon: Icon, label, desc }) => (
-            <Link
-              key={href}
-              href={href}
-              prefetch={false}
-              className="card p-4 hover:border-brand-200 hover:shadow-md transition-all group"
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <Icon className="w-4 h-4 text-brand-600" />
-                <span className="text-sm font-medium text-gray-900 group-hover:text-brand-700">{label}</span>
-              </div>
-              <p className="text-xs text-gray-400">{desc}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Departments */}
-      {departments.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">Departments</h2>
-            <Link href={`/${params.school}/departments`} prefetch={false} className="text-xs text-brand-600 hover:underline">
-              View all →
-            </Link>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {departments.map(dept => (
-              <Link
-                key={dept.id}
-                href={`/${params.school}/departments/${dept.slug}`}
-                prefetch={false}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:border-brand-300 hover:text-brand-700 transition-colors"
-              >
-                {dept.name}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Recent activity */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-gray-400" />
-            Recent board posts
-          </h2>
-          <Link href={`/${params.school}/boards`} prefetch={false} className="text-xs text-brand-600 hover:underline">
-            View all →
+          {/* Search — quiet, full-width affordance */}
+          <Link
+            href={`/${params.school}/advisors`}
+            prefetch={false}
+            className="group flex items-center gap-3 w-full rounded-xl bg-white px-4 py-3 ring-1 ring-stone-200 text-sm text-stone-500 shadow-sm hover:ring-slate-300 hover:text-stone-700 transition-all"
+          >
+            <Search className="w-4 h-4 shrink-0 text-stone-400 group-hover:text-slate-700 transition-colors" />
+            <span>Search advisors, courses, departments</span>
           </Link>
-        </div>
 
-        {!recentPosts.length ? (
-          <div className="card p-6 text-center text-gray-400">
-            <p className="text-sm">No posts yet. Start the first conversation.</p>
-            <Link href={`/${params.school}/boards/new`} prefetch={false} className="btn-primary text-xs py-1.5 inline-flex mt-3">
-              <Plus className="w-3.5 h-3.5" /> Post anonymously
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {recentPosts.map(post => {
-              // Department post → /{school}/boards/{deptSlug}/{postId}
-              // Course discussion post → /{school}/courses/{courseId}/discussion/{postId}
-              // Falls back to /{school}/boards if neither slug nor course_id is present.
-              const deptSlug = post.departments?.slug
-              const href = post.board_type === 'course' && post.course_id
-                ? `/${params.school}/courses/${post.course_id}/discussion/${post.id}`
-                : deptSlug
-                  ? `/${params.school}/boards/${deptSlug}/${post.id}`
-                  : `/${params.school}/boards`
-              return (
+          {/* Quick actions */}
+          <section className="space-y-3">
+            <h2 className="text-xs font-medium uppercase tracking-wider text-stone-500">
+              Quick actions
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {quickActions.map(({ href, icon: Icon, label, desc }) => (
                 <Link
-                  key={post.id}
+                  key={href}
                   href={href}
                   prefetch={false}
-                  className="card p-3 hover:border-brand-200 hover:shadow-sm transition-all group block"
+                  className="group rounded-xl bg-white px-4 py-4 ring-1 ring-stone-200 shadow-sm hover:ring-slate-300 hover:shadow transition-all duration-200"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 group-hover:text-brand-700 truncate">{post.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {post.is_anonymous
-                          ? getAnonymousHandle(post.author_id, post.id)
-                          : getAuthorLabel(post.author_id, handleMap, emailMap)
-                        }
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-4 h-4 text-stone-500 group-hover:text-slate-700 transition-colors" />
+                        <span className="text-sm font-medium text-stone-900">{label}</span>
+                      </div>
+                      <p className="mt-1.5 text-xs text-stone-500">{desc}</p>
                     </div>
-                    <span className="text-xs text-gray-400 shrink-0">{timeAgo(post.created_at)}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 shrink-0 text-stone-300 group-hover:text-slate-700 transition-colors" />
                   </div>
                 </Link>
-              )
-            })}
-          </div>
-        )}
-      </section>
+              ))}
+            </div>
+          </section>
 
-      {/* Recent advisor reviews */}
-      {recentReviews.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-gray-400" />
-              Recent advisor reviews
-            </h2>
-            <Link href={`/${params.school}/advisors`} prefetch={false} className="text-xs text-brand-600 hover:underline">
-              View all →
-            </Link>
-          </div>
-          <div className="space-y-2">
-            {recentReviews.map(review => (
-              <div key={review.id} className="card p-4 space-y-1">
-                <p className="text-xs font-semibold text-gray-600">{review.advisors?.name ?? 'Advisor'}</p>
-                <p className="text-sm text-gray-700 line-clamp-2 leading-relaxed">{review.anonymized_text}</p>
-                <p className="text-xs text-gray-400">{timeAgo(review.created_at)}</p>
+          {/* Departments */}
+          {departments.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-xs font-medium uppercase tracking-wider text-stone-500">
+                  Departments
+                </h2>
+                <Link
+                  href={`/${params.school}/departments`}
+                  prefetch={false}
+                  className="text-xs text-slate-700 hover:text-slate-900 hover:underline underline-offset-2"
+                >
+                  View all →
+                </Link>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+              <div className="flex flex-wrap gap-2">
+                {departments.map(dept => (
+                  <Link
+                    key={dept.id}
+                    href={`/${params.school}/departments/${dept.slug}`}
+                    prefetch={false}
+                    className="px-3 py-1.5 rounded-full bg-white text-sm text-stone-700 ring-1 ring-stone-200 hover:ring-slate-300 hover:text-slate-900 transition-all"
+                  >
+                    {dept.name}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* Contribution CTA */}
-      <section className="card p-5 bg-brand-50 border-brand-100 space-y-2">
-        <h3 className="text-sm font-semibold text-brand-800">Help future students</h3>
-        <p className="text-xs text-brand-700">
-          Leave an anonymous review for an advisor, lab, or course. Your experience helps others make better decisions.
-        </p>
-        <div className="flex gap-2 pt-1">
-          <Link href={`/${params.school}/advisors`} prefetch={false} className="btn-primary text-xs py-1.5">
-            Review an advisor
-          </Link>
-          <Link href={`/${params.school}/courses`} prefetch={false} className="btn-secondary text-xs py-1.5">
-            Review a course
-          </Link>
+          {/* Recent board posts */}
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-stone-500">
+                Recent boards
+              </h2>
+              <Link
+                href={`/${params.school}/boards`}
+                prefetch={false}
+                className="text-xs text-slate-700 hover:text-slate-900 hover:underline underline-offset-2"
+              >
+                View all →
+              </Link>
+            </div>
+
+            {!recentPosts.length ? (
+              <div className="rounded-xl bg-white ring-1 ring-stone-200 px-5 py-8 text-center">
+                <p className="text-sm text-stone-700">
+                  The boards are quiet right now.
+                </p>
+                <p className="mt-1 text-xs text-stone-500">
+                  Your question is probably someone else&rsquo;s, too.
+                </p>
+                <Link
+                  href={`/${params.school}/boards/new`}
+                  prefetch={false}
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Start the first conversation
+                </Link>
+              </div>
+            ) : (
+              <ul className="rounded-xl bg-white ring-1 ring-stone-200 shadow-sm divide-y divide-stone-100 overflow-hidden">
+                {recentPosts.map(post => {
+                  // Department post  → /{school}/boards/{deptSlug}/{postId}
+                  // Course post      → /{school}/courses/{courseId}/discussion/{postId}
+                  // Fallback         → boards index, only when neither slug nor course_id is present.
+                  const deptSlug = post.departments?.slug
+                  const href = post.board_type === 'course' && post.course_id
+                    ? `/${params.school}/courses/${post.course_id}/discussion/${post.id}`
+                    : deptSlug
+                      ? `/${params.school}/boards/${deptSlug}/${post.id}`
+                      : `/${params.school}/boards`
+                  return (
+                    <li key={post.id}>
+                      <Link
+                        href={href}
+                        prefetch={false}
+                        className="group flex items-start justify-between gap-4 px-4 py-3 hover:bg-stone-50 transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-stone-900 group-hover:text-slate-900 truncate">
+                            {post.title}
+                          </p>
+                          <p className="mt-0.5 text-xs text-stone-500">
+                            {post.is_anonymous
+                              ? getAnonymousHandle(post.author_id, post.id)
+                              : getAuthorLabel(post.author_id, handleMap, emailMap)}
+                          </p>
+                        </div>
+                        <span className="shrink-0 mt-0.5 text-[11px] font-mono text-stone-400 tabular-nums">
+                          {timeAgo(post.created_at)}
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+
+          {/* Recent advisor reviews */}
+          {recentReviews.length > 0 && (
+            <section className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-xs font-medium uppercase tracking-wider text-stone-500">
+                  Recent advisor reviews
+                </h2>
+                <Link
+                  href={`/${params.school}/advisors`}
+                  prefetch={false}
+                  className="text-xs text-slate-700 hover:text-slate-900 hover:underline underline-offset-2"
+                >
+                  View all →
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {recentReviews.map(review => (
+                  <article
+                    key={review.id}
+                    className="rounded-xl bg-white ring-1 ring-stone-200 shadow-sm px-5 py-4"
+                  >
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-600">
+                      {review.advisors?.name ?? 'Advisor'}
+                    </p>
+                    <p className="mt-2 text-sm text-stone-700 leading-relaxed line-clamp-2">
+                      {review.anonymized_text}
+                    </p>
+                    <p className="mt-2 text-[11px] font-mono text-stone-400 tabular-nums">
+                      {timeAgo(review.created_at)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Contribution CTA — muted, single sentence */}
+          <section className="rounded-xl bg-white ring-1 ring-stone-200 px-5 py-5">
+            <h3 className="text-sm font-semibold text-stone-900">Help future students</h3>
+            <p className="mt-1.5 text-xs text-stone-600 leading-relaxed max-w-md">
+              Leave an anonymous review for an advisor, lab, or course.
+              The honesty here only exists because people like you wrote it down.
+            </p>
+            <div className="mt-4 flex gap-5 text-sm">
+              <Link
+                href={`/${params.school}/advisors`}
+                prefetch={false}
+                className="inline-flex items-center gap-1 font-medium text-slate-800 hover:text-slate-900 transition-colors"
+              >
+                Review an advisor <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href={`/${params.school}/courses`}
+                prefetch={false}
+                className="inline-flex items-center gap-1 text-stone-600 hover:text-slate-800 transition-colors"
+              >
+                Review a course <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </section>
+
+          {/* Trust footer — canonical phrasing */}
+          <footer className="pt-2 pb-6 text-center">
+            <p className="text-[11px] text-stone-500 tracking-wide">
+              Verified students.
+              <span className="text-stone-400"> · </span>
+              Anonymous by default.
+              <span className="text-stone-400"> · </span>
+              Moderated.
+            </p>
+          </footer>
+
         </div>
-        <p className="text-[10px] text-brand-600 opacity-70 pt-1">
-          Verified students only · Anonymous by default · Moderated for safety.
-        </p>
-      </section>
-
-    </main>
+      </main>
+    </>
   )
 }
