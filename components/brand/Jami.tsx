@@ -934,10 +934,18 @@ function useAnimationClock(
   const [tick, setTick] = useState<{ idx: number; elapsedMs: number }>({ idx: 0, elapsedMs: 0 });
   const startRef = useRef(performance.now());
   const rafRef = useRef<number>(0);
+  // Throttle: only call setState when ~70ms has passed OR the frame index
+  // changed. The breath wave and walk waddle only ever produce integer-pixel
+  // changes a few times per second, so polling at 60Hz wastes renders.
+  // 70ms ≈ 14fps which is plenty for sprite animation and a 4× cut in churn
+  // when multiple Jami instances are mounted simultaneously.
+  const RENDER_MIN_INTERVAL_MS = 70;
+  const lastEmitRef = useRef({ at: 0, idx: 0 });
 
   useEffect(() => {
     // Reset clock on any state change.
     startRef.current = performance.now();
+    lastEmitRef.current = { at: 0, idx: -1 };
     if (!active) {
       setTick({ idx: 0, elapsedMs: 0 });
       return;
@@ -946,7 +954,11 @@ function useAnimationClock(
       const elapsed = performance.now() - startRef.current;
       const afterHold = Math.max(0, elapsed - STATE_ENTER_HOLD_MS);
       const idx = frameCount <= 1 ? 0 : Math.floor(afterHold / frameMs) % frameCount;
-      setTick({ idx, elapsedMs: elapsed });
+      const last = lastEmitRef.current;
+      if (idx !== last.idx || elapsed - last.at >= RENDER_MIN_INTERVAL_MS) {
+        lastEmitRef.current = { at: elapsed, idx };
+        setTick({ idx, elapsedMs: elapsed });
+      }
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);

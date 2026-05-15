@@ -14,6 +14,7 @@
 
 import { clsx } from 'clsx'
 import { Jami, type JamiState } from './Jami'
+import { MascotErrorBoundary } from './MascotErrorBoundary'
 
 export type JamState =
   | 'default'
@@ -75,7 +76,9 @@ export function JamMascot({
       className={clsx('inline-block relative', className)}
       style={{ width: px, height: px }}
     >
-      <Jami state={STATE_MAP[state]} size={px} />
+      <MascotErrorBoundary>
+        <Jami state={STATE_MAP[state]} size={px} />
+      </MascotErrorBoundary>
       {/* tiny status overlays — Jami's sprite is neutral; these still
           carry the per-state meaning the old wrapper conveyed. */}
       {state === 'caffeinated' && (
