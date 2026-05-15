@@ -16,6 +16,6 @@ export function isOnboarded(user: OnboardingFields | null | undefined): boolean 
 export async function requireOnboardedViewer() {
   const viewer = await getOptionalViewer()
   if (!viewer) redirect('/auth/login')
-  if (!isOnboarded(viewer as any)) redirect('/profile/onboarding')
+  if (!isOnboarded(viewer)) redirect('/profile/onboarding')
   return viewer
 }

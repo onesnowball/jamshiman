@@ -5,7 +5,13 @@ import { Flag, Users, UserCog, Shield, BookOpen, GraduationCap, Hash, ShieldOff 
 import { getAdminViewer } from '@/lib/server-auth'
 import { requireAdminUniversity } from '@/lib/admin-context'
 
+import { unstable_noStore as noStore } from 'next/cache'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AdminPage({ params }: { params: { school: string } }) {
+  noStore()
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
   const supabase = createAdminClient()

@@ -45,6 +45,7 @@ export interface Database {
           onboarding_completed: boolean
           onboarding_completed_at: string | null
           grad_attested_at: string | null
+          delete_requested_at: string | null
           created_at: string
         }
         Insert: Omit<users['Row'], 'created_at'>
@@ -218,6 +219,87 @@ export interface Database {
         Update: { comment_id?: string; user_id?: string; created_at?: string }
         Relationships: []
       }
+      daily_checkins: {
+        Row: {
+          id: string
+          user_id: string
+          university_id: string
+          dept_id: string
+          academic_status: 'masters' | 'phd' | 'postdoc' | 'other_grad'
+          checkin_date: string  // YYYY-MM-DD
+          sleep_hours: number
+          stress_level: number
+          mood: string
+          hours_worked: number | null
+          caffeine_count: number | null
+          worked_after_midnight: boolean
+          context_tag: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Omit<daily_checkins['Row'], 'id' | 'created_at' | 'updated_at'> & { updated_at?: string }
+        Update: Partial<daily_checkins['Insert']>
+      }
+      pulse_daily_aggregates: {
+        Row: {
+          id: string
+          aggregate_date: string
+          university_id: string
+          dept_id: string | null
+          academic_status: string | null
+          group_type: 'school' | 'department' | 'academic_status' | 'department_status'
+          unique_user_count: number
+          checkin_count: number
+          avg_sleep: number | null
+          avg_stress: number | null
+          avg_hours_worked: number | null
+          total_caffeine: number
+          worked_after_midnight_count: number
+          mood_counts: Record<string, number>
+          updated_at: string
+        }
+        Insert: Omit<pulse_daily_aggregates['Row'], 'id' | 'updated_at'> & { updated_at?: string }
+        Update: Partial<pulse_daily_aggregates['Insert']>
+      }
+      user_xp_ledger: {
+        Row: {
+          id: string
+          user_id: string
+          university_id: string
+          event_type: string
+          points: number
+          source_type: string | null
+          source_id: string | null
+          idempotency_key: string
+          created_at: string
+        }
+        Insert: Omit<user_xp_ledger['Row'], 'id' | 'created_at'>
+        Update: Partial<user_xp_ledger['Insert']>
+      }
+      advisor_review_requests: {
+        Row: {
+          id: string
+          user_id: string
+          advisor_id: string
+          university_id: string
+          created_at: string
+        }
+        Insert: Omit<advisor_review_requests['Row'], 'id' | 'created_at'>
+        Update: Partial<advisor_review_requests['Insert']>
+      }
+      reward_catalog: {
+        Row: {
+          id: string
+          university_id: string | null
+          title: string
+          description: string | null
+          xp_cost: number
+          active: boolean
+          created_at: string
+        }
+        Insert: Omit<reward_catalog['Row'], 'id' | 'created_at'>
+        Update: Partial<reward_catalog['Insert']>
+      }
     }
     Views: {
       advisor_aggregates: {
@@ -253,6 +335,17 @@ type schedules = Tables['schedules']
 type schedule_courses = Tables['schedule_courses']
 type flags = Tables['flags']
 type audit_log = Tables['audit_log']
+type daily_checkins = Tables['daily_checkins']
+type pulse_daily_aggregates = Tables['pulse_daily_aggregates']
+type user_xp_ledger = Tables['user_xp_ledger']
+type advisor_review_requests = Tables['advisor_review_requests']
+type reward_catalog = Tables['reward_catalog']
+
+export type DailyCheckin = daily_checkins['Row']
+export type PulseDailyAggregate = pulse_daily_aggregates['Row']
+export type UserXpLedger = user_xp_ledger['Row']
+export type AdvisorReviewRequest = advisor_review_requests['Row']
+export type RewardCatalog = reward_catalog['Row']
 
 export type University = universities['Row']
 export type Department = departments['Row']

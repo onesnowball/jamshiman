@@ -11,9 +11,15 @@ import { SuspensionRequestButton } from '@/components/admin/SuspensionRequestBut
 import { SuspensionReviewButtons } from '@/components/admin/SuspensionReviewButtons'
 import type { User } from '@/types/database'
 
+import { unstable_noStore as noStore } from 'next/cache'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AdminUserDetailPage({
   params,
 }: { params: { school: string; userId: string } }) {
+  noStore()
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
 

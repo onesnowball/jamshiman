@@ -107,7 +107,7 @@ export async function requireViewer(): Promise<
   if (viewer.is_banned) {
     return { viewer: null, supabase: null, error: NextResponse.json({ error: 'Account suspended' }, { status: 403 }) }
   }
-  if (!isOnboarded(viewer as any)) {
+  if (!isOnboarded(viewer)) {
     return { viewer: null, supabase: null, error: NextResponse.json({ error: 'Onboarding required' }, { status: 403 }) }
   }
   return { viewer, supabase, error: null }

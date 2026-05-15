@@ -7,9 +7,15 @@ import { getAuthEmailMap } from '@/lib/admin-users'
 import { AccessManager } from '@/components/admin/AccessManager'
 import type { User } from '@/types/database'
 
+import { unstable_noStore as noStore } from 'next/cache'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type AccessRecord = User & { email: string; campusAdminUniversityIds: string[] }
 
 export default async function AdminAccessPage({ params }: { params: { school: string } }) {
+  noStore()
   const viewer = await getAdminViewer()
   if (!viewer || viewer.role !== 'admin') redirect('/auth/login')
   await requireAdminUniversity(viewer, params.school)

@@ -6,7 +6,13 @@ import { requireAdminUniversity } from '@/lib/admin-context'
 import { BoardTopicManager } from '@/components/admin/BoardTopicManager'
 import type { Department } from '@/types/database'
 
+import { unstable_noStore as noStore } from 'next/cache'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function AdminBoardsPage({ params }: { params: { school: string } }) {
+  noStore()
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
 

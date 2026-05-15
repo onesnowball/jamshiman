@@ -29,6 +29,9 @@ export async function awardXp(opts: {
   sourceId?: string | null
   idempotencyKey: string
 }): Promise<{ awarded: boolean }> {
+  // `as any` on the client is needed because @supabase/ssr's typed Insert
+  // resolves the table to never[] for our Database shape — a known quirk
+  // we live with elsewhere in the codebase.
   const supabase = createAdminClient() as any
   const points = opts.points ?? XP_POINTS[opts.eventType]
   const { error } = await supabase.from('user_xp_ledger').insert({

@@ -8,6 +8,11 @@ import { getAdminViewer } from '@/lib/server-auth'
 import { requireAdminUniversity } from '@/lib/admin-context'
 import type { FlagContentType } from '@/lib/content'
 
+import { unstable_noStore as noStore } from 'next/cache'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type FlagPreview = { headline: string; body: string }
 
 async function getFlagPreview(
@@ -63,6 +68,7 @@ type FlagGroup = {
 }
 
 export default async function AdminFlagsPage({ params }: { params: { school: string } }) {
+  noStore()
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
   const supabase = createAdminClient()

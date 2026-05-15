@@ -6,9 +6,15 @@ import { requireAdminUniversity } from '@/lib/admin-context'
 import { createAdminClient } from '@/lib/supabase/server'
 import type { Course, Department } from '@/types/database'
 
+import { unstable_noStore as noStore } from 'next/cache'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type CourseWithDept = Course & { departments: { name: string } | null }
 
 export default async function AdminCoursesPage({ params }: { params: { school: string } }) {
+  noStore()
   const viewer = await getAdminViewer()
   if (!viewer) redirect('/auth/login')
 
