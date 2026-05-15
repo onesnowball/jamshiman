@@ -2,8 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { GraduationCap, Mail, AlertCircle, Loader2, Shield, KeyRound, AtSign } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { GraduationCap, Mail, AlertCircle, Loader2, Shield, KeyRound } from 'lucide-react'
 import {
   getPublicAllowedSchoolDomains,
   getPublicPrimarySchoolDomain,
@@ -15,13 +15,10 @@ import { domainToSlug, slugToDomain } from '@/lib/school-slugs'
 function LoginPageContent() {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
-  const [status, setStatus] = useState<'idle' | 'loading' | 'verify' | 'verifying' | 'handle' | 'savingHandle' | 'error'>('idle')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'verify' | 'verifying' | 'error'>('idle')
   const [error, setError] = useState('')
-  const [handle, setHandle] = useState('')
-  const [handleError, setHandleError] = useState('')
   const [isDevLoggingIn, setIsDevLoggingIn] = useState(false)
   const supabase = createClient()
-  const router = useRouter()
   const searchParams = useSearchParams()
   const devBypassEnabled = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true'
   const allowedDomains = getPublicAllowedSchoolDomains()
@@ -29,7 +26,6 @@ function LoginPageContent() {
 
   // If coming from the school picker, scope the UI to that school
   const schoolParam = searchParams.get('school')?.toLowerCase() ?? ''
-  // Trust the URL param directly for display (email validation still enforces allowed domains on submit)
   const displayDomain = schoolParam ? slugToDomain(schoolParam) : primaryDomain
   const emailPlaceholder = `you@${displayDomain}`
   const schoolLabel: Record<string, string> = {
@@ -56,8 +52,6 @@ function LoginPageContent() {
     setError('')
     const normalizedEmail = normalizeEmail(email)
 
-    // H-11: Domain enforcement is server-side only. Client just validates against
-    // the global allowed-domains list — no admin-email whitelist in the bundle.
     if (!isAllowedSchoolEmail(normalizedEmail, allowedDomains)) {
       setError(`Only ${allowedDomains.map(d => `@${d}`).join(', ')} addresses accepted.`)
       return
@@ -112,46 +106,13 @@ function LoginPageContent() {
       return
     }
 
-    const json = await res.json()
-    if (json.needsHandle) {
-      setStatus('handle')
+    const json = await res.json() as { ok: true; needsOnboarding: boolean }
+    // New users go straight to onboarding (which owns handle/dept/attestation).
+    // Returning users go to their school's boards.
+    if (json.needsOnboarding) {
+      window.location.href = '/profile/onboarding'
       return
     }
-
-    const slug = schoolParam ? domainToSlug(displayDomain) : 'umich'
-    window.location.href = `/${slug}/boards`
-  }
-
-  async function handleSetHandle(e: React.FormEvent) {
-    e.preventDefault()
-    setHandleError('')
-    const trimmed = handle.trim().toLowerCase()
-    if (trimmed.length < 3) {
-      setHandleError('Handle must be at least 3 characters')
-      return
-    }
-    setStatus('savingHandle')
-    try {
-      const res = await fetch('/api/profile/handle', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ handle: trimmed }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setHandleError(data.error || 'Could not save handle. Try another.')
-        setStatus('handle')
-        return
-      }
-      const slug = schoolParam ? domainToSlug(displayDomain) : 'umich'
-      window.location.href = `/${slug}/boards`
-    } catch {
-      setHandleError('Something went wrong. Please try again.')
-      setStatus('handle')
-    }
-  }
-
-  function skipHandle() {
     const slug = schoolParam ? domainToSlug(displayDomain) : 'umich'
     window.location.href = `/${slug}/boards`
   }
@@ -185,60 +146,7 @@ function LoginPageContent() {
         </div>
 
         <div className="card p-6">
-          {status === 'handle' || status === 'savingHandle' ? (
-            <form onSubmit={handleSetHandle} className="space-y-4">
-              <div className="text-center mb-2">
-                <AtSign className="w-8 h-8 text-brand-600 mx-auto mb-2" />
-                <p className="font-medium text-gray-900">Choose a display name</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Shown when you post without anonymity. Lowercase letters, numbers, underscores (3–20 chars).
-                </p>
-              </div>
-
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm select-none">@</span>
-                <input
-                  type="text"
-                  value={handle}
-                  onChange={e => setHandle(e.target.value.replace(/[^a-z0-9_]/g, '').slice(0, 20))}
-                  placeholder="your_handle"
-                  className="input pl-7"
-                  autoFocus
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  minLength={3}
-                  maxLength={20}
-                />
-              </div>
-
-              {handleError && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg p-3">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {handleError}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={status === 'savingHandle' || handle.length < 3}
-                className="btn-primary w-full justify-center py-2.5 disabled:opacity-50"
-              >
-                {status === 'savingHandle'
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-                  : 'Continue'
-                }
-              </button>
-
-              <button
-                type="button"
-                onClick={skipHandle}
-                className="text-sm text-gray-400 hover:text-gray-600 w-full text-center py-1"
-              >
-                Skip for now
-              </button>
-            </form>
-          ) : status === 'verify' || status === 'verifying' ? (
+          {status === 'verify' || status === 'verifying' ? (
             <form onSubmit={handleVerifyCode} className="space-y-4">
               <div className="text-center mb-2">
                 <KeyRound className="w-8 h-8 text-brand-600 mx-auto mb-2" />

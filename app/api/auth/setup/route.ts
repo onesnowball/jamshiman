@@ -52,14 +52,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'profile_failed', detail: profileError.message }, { status: 500 })
   }
 
-  // Check if the user still needs to choose a handle (new users or existing users who skipped)
+  // Check if the user still needs to complete onboarding. Onboarding owns
+  // the handle, dept, academic-status, and grad-attestation step — so the
+  // login flow no longer asks for a handle separately.
   const { data: profile } = await adminSupabase
     .from('users')
-    .select('handle')
+    .select('onboarding_completed')
     .eq('id', user.id)
     .single()
 
-  const needsHandle = !(profile as { handle: string | null } | null)?.handle
+  const needsOnboarding = !(profile as { onboarding_completed: boolean | null } | null)?.onboarding_completed
 
-  return NextResponse.json({ ok: true, needsHandle })
+  return NextResponse.json({ ok: true, needsOnboarding })
 }

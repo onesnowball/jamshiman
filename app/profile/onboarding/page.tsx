@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { isOnboarded } from '@/lib/onboarding'
 import { GradOnboardingForm } from '@/components/profile/GradOnboardingForm'
 import { GradOnboardingIllustration } from '@/components/profile/GradOnboardingIllustration'
+import { SignOutButton } from '@/components/profile/SignOutButton'
 import type { AcademicStatus } from '@/lib/pulse/options'
 
 export const dynamic = 'force-dynamic'
@@ -45,6 +46,10 @@ export default async function OnboardingPage() {
         <p className="text-[11px] text-gray-400 mt-4 leading-relaxed text-center">
           We do not ask for your lab, advisor, cohort, or exact research group. Your profile is only used to keep jamshiman stats anonymous and meaningful. UMich email verifies school membership — graduate status is self-attested.
         </p>
+
+        <div className="mt-6 flex justify-center">
+          <SignOutButton />
+        </div>
       </main>
     </div>
   )

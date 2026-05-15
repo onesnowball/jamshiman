@@ -33,9 +33,9 @@ export default async function SchoolHomePage({ params }: { params: { school: str
   const supabase = createAdminClient()
 
   const [{ data: recentPostsData }, { data: deptData }, { data: reviewData }] = await Promise.all([
-    supabase
+    (supabase as any)
       .from('posts')
-      .select('id, title, body, created_at, is_anonymous, author_id, dept_id, board_type')
+      .select('id, title, body, created_at, is_anonymous, author_id, dept_id, course_id, board_type, departments(slug)')
       .eq('university_id', university.id)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -57,7 +57,13 @@ export default async function SchoolHomePage({ params }: { params: { school: str
       .limit(3),
   ])
 
-  const recentPosts = (recentPostsData ?? []) as (Post & { dept_id: string })[]
+  const recentPosts = (recentPostsData ?? []) as Array<
+    Post & {
+      dept_id: string
+      course_id: string | null
+      departments: { slug: string } | null
+    }
+  >
   const departments = (deptData ?? []) as { id: string; name: string; slug: string }[]
   const recentReviews = (reviewData ?? []) as {
     id: string; advisor_id: string; anonymized_text: string; created_at: string
@@ -167,27 +173,38 @@ export default async function SchoolHomePage({ params }: { params: { school: str
           </div>
         ) : (
           <div className="space-y-2">
-            {recentPosts.map(post => (
-              <Link
-                key={post.id}
-                href={`/${params.school}/boards`}
-                prefetch={false}
-                className="card p-3 hover:border-brand-200 hover:shadow-sm transition-all group block"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 group-hover:text-brand-700 truncate">{post.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {post.is_anonymous
-                        ? getAnonymousHandle(post.author_id, post.id)
-                        : getAuthorLabel(post.author_id, handleMap, emailMap)
-                      }
-                    </p>
+            {recentPosts.map(post => {
+              // Department post → /{school}/boards/{deptSlug}/{postId}
+              // Course discussion post → /{school}/courses/{courseId}/discussion/{postId}
+              // Falls back to /{school}/boards if neither slug nor course_id is present.
+              const deptSlug = post.departments?.slug
+              const href = post.board_type === 'course' && post.course_id
+                ? `/${params.school}/courses/${post.course_id}/discussion/${post.id}`
+                : deptSlug
+                  ? `/${params.school}/boards/${deptSlug}/${post.id}`
+                  : `/${params.school}/boards`
+              return (
+                <Link
+                  key={post.id}
+                  href={href}
+                  prefetch={false}
+                  className="card p-3 hover:border-brand-200 hover:shadow-sm transition-all group block"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 group-hover:text-brand-700 truncate">{post.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {post.is_anonymous
+                          ? getAnonymousHandle(post.author_id, post.id)
+                          : getAuthorLabel(post.author_id, handleMap, emailMap)
+                        }
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400 shrink-0">{timeAgo(post.created_at)}</span>
                   </div>
-                  <span className="text-xs text-gray-400 shrink-0">{timeAgo(post.created_at)}</span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              )
+            })}
           </div>
         )}
       </section>
