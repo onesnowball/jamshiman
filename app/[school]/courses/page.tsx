@@ -5,6 +5,7 @@ import { getUniversityBySlug } from '@/lib/school'
 import type { Course, CourseRatings } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 type CourseListItem = Course & {
   departments: { name: string | null } | null
@@ -13,19 +14,40 @@ type CourseListItem = Course & {
   avgRatings: CourseRatings | null
 }
 
-export default async function CoursesPage({ params }: { params: { school: string } }) {
+export default async function CoursesPage({
+  params,
+  searchParams,
+}: {
+  params: { school: string }
+  searchParams?: { dept?: string }
+}) {
   const university = await getUniversityBySlug(params.school)
   if (!university) notFound()
 
   const supabase = createAdminClient()
 
-  const [{ data: coursesData }, { data: deptData }, { data: allPostsData }] = await Promise.all([
-    (supabase as any)
-      .from('courses')
-      .select('*')
+  let activeDept: { id: string; slug: string; name: string } | null = null
+  if (searchParams?.dept) {
+    const { data: deptRow } = await supabase
+      .from('departments')
+      .select('id, slug, name')
       .eq('university_id', university.id)
-      .order('code')
-      .limit(200),
+      .eq('is_board_category', false)
+      .eq('slug', searchParams.dept)
+      .maybeSingle()
+    if (deptRow) activeDept = deptRow as { id: string; slug: string; name: string }
+  }
+
+  let coursesQuery = (supabase as any)
+    .from('courses')
+    .select('*')
+    .eq('university_id', university.id)
+    .order('code')
+  if (activeDept) coursesQuery = coursesQuery.eq('dept_id', activeDept.id)
+  else coursesQuery = coursesQuery.limit(500)
+
+  const [{ data: coursesData }, { data: deptData }, { data: allPostsData }] = await Promise.all([
+    coursesQuery,
     supabase
       .from('departments')
       .select('id, name')
@@ -103,7 +125,11 @@ export default async function CoursesPage({ params }: { params: { school: string
           Search by code or name, filter by department, read reviews and jump into class discussion.
         </p>
       </div>
-      <CourseSearch courses={courseItems} school={params.school} />
+      <CourseSearch
+        courses={courseItems}
+        school={params.school}
+        activeDept={activeDept ? { slug: activeDept.slug, name: activeDept.name } : null}
+      />
     </main>
   )
 }

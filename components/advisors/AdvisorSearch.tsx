@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, FlaskConical, Users, ArrowRight } from 'lucide-react'
+import { Search, FlaskConical, Users, ArrowRight, X } from 'lucide-react'
 import { RatingDisplay } from '@/components/ui/StarRating'
 
 type AdvisorItem = {
@@ -34,8 +34,28 @@ const DIMENSION_LABELS: { key: string; label: string }[] = [
   { key: 'avg_career',        label: 'Career' },
 ]
 
-export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; school?: string }) {
+export function AdvisorSearch({
+  advisors,
+  school,
+  activeDept,
+  activeArea,
+}: {
+  advisors: AdvisorItem[]
+  school?: string
+  activeDept?: { slug: string; name: string } | null
+  activeArea?: string | null
+}) {
   const [query, setQuery] = useState('')
+
+  // URLs for the "×" chips that clear individual filters. We rebuild the
+  // search params so removing one filter preserves the other.
+  const baseHref = school ? `/${school}/advisors` : '/advisors'
+  const hrefWithoutDept = activeArea
+    ? `${baseHref}?area=${encodeURIComponent(activeArea)}`
+    : baseHref
+  const hrefWithoutArea = activeDept
+    ? `${baseHref}?dept=${activeDept.slug}`
+    : baseHref
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
@@ -53,6 +73,36 @@ export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; s
 
   return (
     <div className="space-y-4">
+      {(activeDept || activeArea) && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-gray-500">Filtered by:</span>
+          {activeDept && (
+            <Link
+              href={hrefWithoutDept}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-800 hover:bg-brand-100 transition-colors"
+            >
+              {activeDept.name}
+              <X className="w-3 h-3 opacity-60" />
+            </Link>
+          )}
+          {activeArea && (
+            <Link
+              href={hrefWithoutArea}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-800 hover:bg-brand-100 transition-colors"
+            >
+              {activeArea}
+              <X className="w-3 h-3 opacity-60" />
+            </Link>
+          )}
+          <Link
+            href={baseHref}
+            className="text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline ml-1"
+          >
+            clear all
+          </Link>
+        </div>
+      )}
+
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input
@@ -63,9 +113,9 @@ export function AdvisorSearch({ advisors, school }: { advisors: AdvisorItem[]; s
         />
       </div>
 
-      {query && (
+      {(query || activeDept || activeArea) && (
         <p className="text-xs text-gray-400">
-          {filtered.length} result{filtered.length !== 1 ? 's' : ''} for "{query}"
+          {filtered.length} result{filtered.length !== 1 ? 's' : ''}{query ? ` for "${query}"` : ''}
         </p>
       )}
 

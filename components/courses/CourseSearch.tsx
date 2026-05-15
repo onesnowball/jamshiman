@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, MessageSquare, BookOpen } from 'lucide-react'
+import { Search, MessageSquare, BookOpen, X } from 'lucide-react'
 import type { Course, CourseRatings } from '@/types/database'
 
 type CourseListItem = Course & {
@@ -19,9 +19,19 @@ const AVG_LABELS: { key: keyof CourseRatings; label: string }[] = [
   { key: 'professor',   label: 'Instruction' },
 ]
 
-export function CourseSearch({ courses, school }: { courses: CourseListItem[]; school?: string }) {
+export function CourseSearch({
+  courses,
+  school,
+  activeDept,
+}: {
+  courses: CourseListItem[]
+  school?: string
+  activeDept?: { slug: string; name: string } | null
+}) {
   const [query, setQuery] = useState('')
   const [dept, setDept] = useState('All')
+
+  const baseHref = school ? `/${school}/courses` : '/courses'
 
   const deptFilters = useMemo(() => {
     const prefixes = new Set<string>()
@@ -43,6 +53,19 @@ export function CourseSearch({ courses, school }: { courses: CourseListItem[]; s
 
   return (
     <div className="space-y-4">
+      {activeDept && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-gray-500">Filtered by:</span>
+          <Link
+            href={baseHref}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-800 hover:bg-brand-100 transition-colors"
+          >
+            {activeDept.name}
+            <X className="w-3 h-3 opacity-60" />
+          </Link>
+        </div>
+      )}
+
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input
