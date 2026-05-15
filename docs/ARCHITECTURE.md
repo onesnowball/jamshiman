@@ -286,10 +286,17 @@ components/
 `<JamMascot state="..." size="..." />`, `<EmptyStateIllustration variant="..." />`,
 `<CuteLoader />`, `<ContributionCelebration show={...} />`, `<CapybaraLurker />`.
 
-The mascot art lives in one place: `components/brand/JamMascot.tsx` +
-`components/brand/CapybaraSprite.tsx` + `components/brand/capybara-sprites.ts`.
-Pages never inline mascot SVG. Designer assets can later replace the
-internals without touching any page.
+The mascot art lives in one place: `components/brand/Jami.tsx` (the sprite
+component) + `components/brand/JamMascot.tsx` (legacy-state-mapping wrapper).
+Pages never inline mascot SVG. Designer assets can later replace `Jami.tsx`
+without touching any page.
+
+**Mascot asset credit:** the current sprite frames are derived from
+Rainloaf's "Simple Capybara Sprite Sheet"
+(<https://rainloaf.itch.io/capybara-sprite-sheet>), used per Rainloaf's
+license which requires visible credit. The user-facing credit lives in
+the `CapybaraLurker` tooltip ("art: Rainloaf" with link). **Do not remove
+that credit without first replacing the sprite frames.**
 
 ---
 
