@@ -12,7 +12,7 @@ const Body = z.object({
   stressLevel: z.number().int().min(1).max(10),
   mood: z.enum(MOODS),
   hoursWorked: z.number().min(0).max(24).nullable().optional(),
-  caffeineCount: z.number().int().min(0).max(20).nullable().optional(),
+  caffeineCount: z.number().int().min(0).max(20),
   workedAfterMidnight: z.boolean().optional(),
   contextTag: z.enum(CONTEXT_TAGS).nullable().optional(),
 })
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     stress_level: parsed.data.stressLevel,
     mood: parsed.data.mood,
     hours_worked: parsed.data.hoursWorked ?? null,
-    caffeine_count: parsed.data.caffeineCount ?? null,
+    caffeine_count: parsed.data.caffeineCount,
     worked_after_midnight: parsed.data.workedAfterMidnight ?? false,
     context_tag: parsed.data.contextTag ?? null,
     updated_at: new Date().toISOString(),

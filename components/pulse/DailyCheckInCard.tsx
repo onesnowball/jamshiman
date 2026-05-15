@@ -39,6 +39,10 @@ export function DailyCheckInCard({
     if (!mood) { setErr('Pick a mood'); return }
     const sleepNum = Number(sleep)
     if (!(sleepNum >= 0 && sleepNum <= 14)) { setErr('Sleep must be between 0 and 14 hours'); return }
+    if (caffeine === '') { setErr('Enter how many coffees/teas (0 is fine)'); return }
+    const caffeineNum = Number(caffeine)
+    if (!(caffeineNum >= 0 && caffeineNum <= 20)) { setErr('Coffees/teas must be between 0 and 20'); return }
+
     setBusy(true); setErr(null)
     const res = await fetch('/api/pulse/checkin', {
       method: 'POST',
@@ -48,7 +52,7 @@ export function DailyCheckInCard({
         stressLevel: stress,
         mood,
         hoursWorked: hoursWorked === '' ? null : Number(hoursWorked),
-        caffeineCount: caffeine === '' ? null : Number(caffeine),
+        caffeineCount: caffeineNum,
         workedAfterMidnight: afterMidnight,
         contextTag: ctx,
       }),
@@ -75,7 +79,9 @@ export function DailyCheckInCard({
     <form onSubmit={submit} className="card p-5 space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">Sleep last night (hours)</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            Sleep last night <span className="text-gray-400">(hours)</span>
+          </label>
           <input
             type="number" step="0.5" min={0} max={14}
             value={sleep}
@@ -94,48 +100,83 @@ export function DailyCheckInCard({
         <MoodChips value={mood} onChange={setMood} />
       </div>
 
-      <details className="rounded-xl bg-gray-50 border border-gray-100">
-        <summary className="px-3 py-2 text-xs text-gray-600 cursor-pointer">Optional context (skip if you want)</summary>
-        <div className="p-3 pt-0 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-1">Hours worked</label>
-              <input type="number" step="0.5" min={0} max={24} value={hoursWorked} onChange={e => setHoursWorked(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm" />
-            </div>
-            <div>
-              <label className="block text-[11px] text-gray-500 mb-1">Coffees/teas</label>
-              <input type="number" step="1" min={0} max={20} value={caffeine} onChange={e => setCaffeine(e.target.value)}
-                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm" />
-            </div>
-          </div>
-          <label className="flex items-center gap-2 text-xs text-gray-700">
-            <input type="checkbox" checked={afterMidnight} onChange={e => setAfterMidnight(e.target.checked)} />
-            Worked past midnight 🌙
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            Hours worked today <span className="text-gray-400">(so far)</span>
           </label>
-          <div>
-            <label className="block text-[11px] text-gray-500 mb-1">What kind of week?</label>
-            <div className="flex flex-wrap gap-1.5">
-              {CONTEXT_TAGS.map(t => (
-                <button key={t} type="button" onClick={() => setCtx(ctx === t ? null : t)}
-                  className={`px-2 py-1 rounded-full text-[11px] border transition-all ${ctx === t ? 'bg-brand-50 border-brand-300 text-brand-800' : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'}`}>
-                  {CONTEXT_TAG_LABELS[t]}
-                </button>
-              ))}
-            </div>
-          </div>
+          <input
+            type="number" step="0.5" min={0} max={24}
+            value={hoursWorked}
+            onChange={e => setHoursWorked(e.target.value)}
+            placeholder="optional"
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+          />
         </div>
-      </details>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">Coffees/teas today</label>
+          <input
+            type="number" step="1" min={0} max={20}
+            value={caffeine}
+            onChange={e => setCaffeine(e.target.value)}
+            placeholder="0 is fine"
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+          />
+        </div>
+      </div>
+
+      <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={afterMidnight}
+          onChange={e => setAfterMidnight(e.target.checked)}
+          className="rounded"
+        />
+        Worked past midnight last night 🌙
+      </label>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1.5">
+          What kind of week? <span className="text-gray-400">(optional)</span>
+        </label>
+        <div className="flex flex-wrap gap-1.5">
+          {CONTEXT_TAGS.map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setCtx(ctx === t ? null : t)}
+              className={`px-2 py-1 rounded-full text-[11px] border transition-all ${
+                ctx === t
+                  ? 'bg-brand-50 border-brand-300 text-brand-800'
+                  : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {CONTEXT_TAG_LABELS[t]}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {err && <p className="text-xs text-red-600">{err}</p>}
 
-      <div className="flex gap-2">
-        <button type="submit" disabled={busy} className="flex-1 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-300 text-white font-semibold py-2.5 rounded-xl transition-all active:scale-[0.98]">
-          {busy ? '…' : existing ? 'Update today\'s check-in 🌙' : 'Unlock today\'s pulse 🌙'}
+      <div className="flex gap-2 items-stretch">
+        <button
+          type="submit"
+          disabled={busy}
+          className="flex-1 min-w-0 bg-brand-600 hover:bg-brand-700 disabled:bg-gray-300 text-white font-semibold py-2.5 rounded-xl transition-all active:scale-[0.98] whitespace-nowrap"
+        >
+          {busy ? '…' : existing ? 'Update check-in 🌙' : 'Unlock pulse 🌙'}
         </button>
         {existing && (
-          <button type="button" onClick={del} disabled={busy} className="px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">
-            Delete
+          <button
+            type="button"
+            onClick={del}
+            disabled={busy}
+            className="shrink-0 px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 hover:text-red-600"
+            aria-label="Delete today's check-in"
+            title="Delete today's check-in"
+          >
+            ×
           </button>
         )}
       </div>

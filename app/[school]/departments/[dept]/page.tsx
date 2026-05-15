@@ -171,9 +171,11 @@ export default async function DepartmentPage({
       areaFreq.set(area, (areaFreq.get(area) ?? 0) + 1)
     }
   }
-  const topAreas = Array.from(areaFreq.entries())
+  const allAreasSorted = Array.from(areaFreq.entries())
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, 8)
+  const VISIBLE_AREA_CHIPS = 14
+  const topAreas = allAreasSorted.slice(0, VISIBLE_AREA_CHIPS)
+  const moreAreaCount = Math.max(0, allAreasSorted.length - VISIBLE_AREA_CHIPS)
 
   // Build advisor aggregate map
   const aggMap = new Map(
@@ -230,7 +232,17 @@ export default async function DepartmentPage({
           {/* Research areas chips — quick filter into the advisor list */}
           {topAreas.length > 0 && (
             <section className="space-y-2">
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Research happening here</h2>
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Browse by research area
+                </h2>
+                <span className="text-[11px] text-gray-400">
+                  {allAreasSorted.length} {allAreasSorted.length === 1 ? 'area' : 'areas'} listed here
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400">
+                Click any tag to jump to advisors working on it. This is a sample — many advisors list more research areas on their profile.
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {topAreas.map(([area, count]) => (
                   <Link
@@ -242,6 +254,14 @@ export default async function DepartmentPage({
                     <span className="text-gray-400">{count}</span>
                   </Link>
                 ))}
+                {moreAreaCount > 0 && (
+                  <Link
+                    href={`/${params.school}/advisors?dept=${department.slug}`}
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs text-brand-600 hover:text-brand-700 hover:underline"
+                  >
+                    +{moreAreaCount} more area{moreAreaCount === 1 ? '' : 's'} →
+                  </Link>
+                )}
               </div>
             </section>
           )}
