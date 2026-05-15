@@ -7,18 +7,10 @@ import { getUniversityBySlug, slugToDomain } from '@/lib/school'
 import { getAnonymousHandle } from '@/lib/anonymous-handles'
 import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 import type { Post } from '@/types/database'
+import { timeAgo } from '@/lib/format/relative-time'
+import { SchoolHomePulseCard } from '@/components/pulse/SchoolHomePulseCard'
 
 export const dynamic = 'force-dynamic'
-
-function timeAgo(dateStr: string): string {
-  const mins = (Date.now() - new Date(dateStr).getTime()) / 60000
-  if (mins < 60)   return `${Math.max(1, Math.floor(mins))}m ago`
-  const hrs = mins / 60
-  if (hrs < 24)    return `${Math.floor(hrs)}h ago`
-  const days = hrs / 24
-  if (days < 7)    return `${Math.floor(days)}d ago`
-  return `${Math.floor(days / 7)}w ago`
-}
 
 export default async function SchoolHomePage({ params }: { params: { school: string } }) {
   const [university, viewer] = await Promise.all([
@@ -94,6 +86,9 @@ export default async function SchoolHomePage({ params }: { params: { school: str
           Advisor reviews, course ratings, and anonymous boards — verified by your .edu email.
         </p>
       </div>
+
+      {/* Pulse — surface daily check-in CTA so it's not buried in the nav */}
+      <SchoolHomePulseCard school={params.school} />
 
       {/* Search */}
       <div>

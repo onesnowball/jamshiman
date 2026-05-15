@@ -1,4 +1,4 @@
-// File: /Users/jamshin/Desktop/gradpeer/app/api/admin/advisors/route.ts
+// File: /Users/jamshin/Desktop/gradpeer/.claude/worktrees/wonderful-torvalds-f5f93c/app/api/admin/advisors/route.ts
 import * as entry from '../../../../../../app/api/admin/advisors/route.js'
 import type { NextRequest } from 'next/server.js'
 

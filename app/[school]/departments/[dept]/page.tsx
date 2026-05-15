@@ -11,17 +11,10 @@ import { ActivityStrip } from '@/components/department/ActivityStrip'
 import type { Course, CourseRatings } from '@/types/database'
 import { unstable_noStore as noStore } from 'next/cache'
 
+import { timeAgoCoarse as timeAgo } from '@/lib/format/relative-time'
+
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
-function timeAgo(dateStr: string): string {
-  const days = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
-  if (days < 1)   return 'today'
-  if (days < 7)   return `${Math.floor(days)}d ago`
-  if (days < 30)  return `${Math.floor(days / 7)}w ago`
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`
-  return `${Math.floor(days / 365)}y ago`
-}
 
 export default async function DepartmentPage({
   params,

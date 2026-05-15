@@ -1,4 +1,4 @@
-// File: /Users/jamshin/Desktop/gradpeer/app/courses/page.tsx
+// File: /Users/jamshin/Desktop/gradpeer/.claude/worktrees/wonderful-torvalds-f5f93c/app/courses/page.tsx
 import * as entry from '../../../../app/courses/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

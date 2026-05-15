@@ -1,4 +1,4 @@
-// File: /Users/jamshin/Desktop/gradpeer/app/schedule/page.tsx
+// File: /Users/jamshin/Desktop/gradpeer/.claude/worktrees/wonderful-torvalds-f5f93c/app/schedule/page.tsx
 import * as entry from '../../../../app/schedule/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

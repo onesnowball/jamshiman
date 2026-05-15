@@ -19,7 +19,23 @@
       "Bash(vercel --prod)",
       "Bash(npx vercel *)",
       "Bash(git -C /Users/jamshin/Desktop/gradpeer remote -v)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(npm run *)",
+      "Bash(git check-ignore *)",
+      "Bash(git fetch *)",
+      "Bash(npm install *)",
+      "WebFetch(domain:www.google.com)",
+      "WebFetch(domain:duckduckgo.com)",
+      "WebFetch(domain:bulletin.engin.umich.edu)",
+      "WebFetch(domain:www.coursicle.com)",
+      "WebFetch(domain:space.umich.edu)",
+      "WebFetch(domain:atlas.ai.umich.edu)",
+      "WebFetch(domain:www.koofers.com)",
+      "Bash(cp \"/Users/jamshin/Downloads/Jami \\(1\\).tsx\" components/brand/Jami.tsx && ls components/brand/)",
+      "Bash(sips -g pixelWidth -g pixelHeight public/brand/jami.png)",
+      "Bash(python3 -c \"from PIL import Image; print\\('PIL ok'\\)\")",
+      "Bash(python3)",
+      "Bash(mkdir -p app/advisors app/boards app/courses app/schedule app/advisors/\\\\[id\\\\] app/boards/\\\\[dept\\\\] app/boards/\\\\[dept\\\\]/\\\\[postId\\\\] app/boards/new app/courses/\\\\[id\\\\] app/courses/\\\\[id\\\\]/discussion/\\\\[postId\\\\])"
     ]
   }
 }

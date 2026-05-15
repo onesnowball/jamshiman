@@ -6,21 +6,11 @@ import { getOptionalViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 import { createAdminClient } from '@/lib/supabase/server'
 import { isOnboarded } from '@/lib/onboarding'
+import { timeAgoCompact as timeAgo } from '@/lib/format/relative-time'
 
 type Message = {
   id: string; sender_id: string; recipient_id: string
   body: string; read_at: string | null; created_at: string
-}
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `${Math.max(1, mins)}m`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h`
-  const days = Math.floor(hrs / 24)
-  if (days < 7) return `${days}d`
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export default async function MessagesPage() {

@@ -1,5 +1,12 @@
 'use client'
 
+// ============================================================================
+// DO NOT REMOVE: Rainloaf credit is required by the sprite sheet license.
+// The "art: Rainloaf" link in the tooltip below is the user-facing credit.
+// If you ever swap to a different artist's sprite, replace the credit link;
+// do not just delete it.
+// ============================================================================
+
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Jami, type JamiState } from './Jami'
