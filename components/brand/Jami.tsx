@@ -28,7 +28,6 @@ export type JamiState = 'walking' | 'sitting' | 'idle' | 'sleeping'
 
 const FRAME_W = 32
 const FRAME_H = 24
-const FRAMES_PER_ANIM = 5
 
 // Row index per state matches the repacked sheet's row order.
 const ROW_BY_STATE: Record<JamiState, number> = {
@@ -38,12 +37,27 @@ const ROW_BY_STATE: Record<JamiState, number> = {
   sleeping: 3,  // lying down
 }
 
-// Per-state frame timing. Sleep is mostly static so it ticks slow.
+// Per-state frame count.
+//
+// The source sheet's "sleep" row is really a STOMP/getup animation —
+// frame 0 is peaceful lying-down, frames 1–4 are the capybara raising
+// its head and getting up. Looping the full 5 makes it look like it
+// keeps waking and snapping back to sleep, which looks broken. So
+// sleeping is locked to frame 0 (a single still pose) — the long-sleep
+// rhythm is carried by the Lurker's scheduler instead.
+const FRAMES_BY_STATE: Record<JamiState, number> = {
+  walking:  5,
+  sitting:  5,
+  idle:     5,
+  sleeping: 1,
+}
+
+// Per-state frame timing.
 const FRAME_MS_BY_STATE: Record<JamiState, number> = {
   walking:  140,
   sitting:  260,
   idle:     320,
-  sleeping: 900,
+  sleeping: 1000, // irrelevant when frame count is 1, but kept for clarity
 }
 
 export interface JamiProps {
@@ -64,8 +78,10 @@ export function Jami({ state, size = 128, className }: JamiProps) {
   useEffect(() => {
     setFrame(0)
     if (prefersReducedMotion()) return
+    const frameCount = FRAMES_BY_STATE[state]
+    if (frameCount <= 1) return  // static pose, no interval needed
     const id = setInterval(() => {
-      setFrame(f => (f + 1) % FRAMES_PER_ANIM)
+      setFrame(f => (f + 1) % frameCount)
     }, FRAME_MS_BY_STATE[state])
     return () => clearInterval(id)
   }, [state])
