@@ -161,22 +161,6 @@ export default async function DepartmentPage({
         .in('course_id', courseIds)
     : { data: [] }
 
-  // Research area frequency across this dept's advisors (primary + extras).
-  // Used for the chip cloud that lets users jump straight to a filtered
-  // advisor list.
-  const areaFreq = new Map<string, number>()
-  for (const a of advisors) {
-    for (const area of (a.research_areas ?? [])) {
-      if (!area) continue
-      areaFreq.set(area, (areaFreq.get(area) ?? 0) + 1)
-    }
-  }
-  const allAreasSorted = Array.from(areaFreq.entries())
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-  const VISIBLE_AREA_CHIPS = 14
-  const topAreas = allAreasSorted.slice(0, VISIBLE_AREA_CHIPS)
-  const moreAreaCount = Math.max(0, allAreasSorted.length - VISIBLE_AREA_CHIPS)
-
   // Build advisor aggregate map
   const aggMap = new Map(
     ((aggregatesData ?? []) as { advisor_id: string; review_count: number; avg_overall: number }[])
@@ -228,43 +212,6 @@ export default async function DepartmentPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-
-          {/* Research areas chips — quick filter into the advisor list */}
-          {topAreas.length > 0 && (
-            <section className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  Browse by research area
-                </h2>
-                <span className="text-[11px] text-gray-400">
-                  {allAreasSorted.length} {allAreasSorted.length === 1 ? 'area' : 'areas'} listed here
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-400">
-                Click any tag to jump to advisors working on it. This is a sample — many advisors list more research areas on their profile.
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {topAreas.map(([area, count]) => (
-                  <Link
-                    key={area}
-                    href={`/${params.school}/advisors?dept=${department.slug}&area=${encodeURIComponent(area)}`}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-white border border-gray-200 text-gray-700 hover:border-brand-300 hover:text-brand-700 transition-colors"
-                  >
-                    {area}
-                    <span className="text-gray-400">{count}</span>
-                  </Link>
-                ))}
-                {moreAreaCount > 0 && (
-                  <Link
-                    href={`/${params.school}/advisors?dept=${department.slug}`}
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs text-brand-600 hover:text-brand-700 hover:underline"
-                  >
-                    +{moreAreaCount} more area{moreAreaCount === 1 ? '' : 's'} →
-                  </Link>
-                )}
-              </div>
-            </section>
-          )}
 
           {/* Advisors — capped preview + view-all link */}
           <section id="advisors" className="space-y-3 scroll-mt-20">
