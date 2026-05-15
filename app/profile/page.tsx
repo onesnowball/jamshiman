@@ -7,6 +7,7 @@ import { getOptionalViewer } from '@/lib/server-auth'
 import { ProfileActivity } from '@/components/profile/ProfileActivity'
 import { HandleEditor } from '@/components/profile/HandleEditor'
 import { SignOutButton } from '@/components/profile/SignOutButton'
+import { DeleteAccountRow } from '@/components/profile/DeleteAccountRow'
 import type { AdvisorReview, CourseReview, Post, Comment, Schedule } from '@/types/database'
 import { isOnboarded } from '@/lib/onboarding'
 
@@ -270,6 +271,11 @@ export default async function ProfilePage() {
               ))
             )}
           </div>
+        </section>
+
+        <section className="space-y-2 pt-2">
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Danger zone</h2>
+          <DeleteAccountRow requestedAt={(viewer as any).delete_requested_at ?? null} />
         </section>
       </main>
     </div>

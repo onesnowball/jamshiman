@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient, canAdminUniversity } from '@/lib/server-auth'
+import { requireViewer, canAdminUniversity } from '@/lib/server-auth'
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const { data: post } = await supabase
     .from('posts')
@@ -52,9 +53,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (viewer.is_banned) return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const body = await req.json()
 

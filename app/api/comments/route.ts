@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient } from '@/lib/server-auth'
+import { requireViewer } from '@/lib/server-auth'
 
 const CommentSchema = z.object({
   post_id: z.string().uuid(),
@@ -9,14 +9,9 @@ const CommentSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) {
-    return NextResponse.json({ error: 'You need to sign in to comment.' }, { status: 401 })
-  }
-
-  if (viewer.is_banned) {
-    return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
-  }
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const body = await req.json()
   const parsed = CommentSchema.safeParse(body)

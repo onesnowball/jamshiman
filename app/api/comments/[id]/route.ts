@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient, canAdminUniversity } from '@/lib/server-auth'
+import { requireViewer, canAdminUniversity } from '@/lib/server-auth'
 
 async function getComment(commentId: string, supabase: any) {
   const { data } = await supabase
@@ -15,8 +15,9 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const comment = await getComment(params.id, supabase as any)
   const isOwner = comment?.author_id === viewer.id
@@ -43,8 +44,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const body = await req.json()
 

@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getActionClient } from '@/lib/server-auth'
-import { isOnboarded } from '@/lib/onboarding'
+import { requireViewer } from '@/lib/server-auth'
 import { awardXp } from '@/lib/xp/awardXp'
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (viewer.is_banned) return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
-  if (!isOnboarded(viewer as any)) return NextResponse.json({ error: 'Onboarding required' }, { status: 403 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const supa = supabase as any
 
@@ -58,8 +56,9 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 }
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const supa = supabase as any
   const [{ count }, { data: mine }] = await Promise.all([

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient } from '@/lib/server-auth'
+import { getActionClient, requireViewer } from '@/lib/server-auth'
 
 const VoteSchema = z.object({
   type: z.enum(['post', 'comment']),
@@ -8,13 +8,37 @@ const VoteSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const parsed = VoteSchema.safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
 
   const { type, id } = parsed.data
+
+  // Cross-school check: a user can only vote on content in their own school.
+  // Global admins exempt.
+  if (viewer.role !== 'admin') {
+    if (type === 'post') {
+      const { data: post } = await supabase.from('posts').select('university_id').eq('id', id).maybeSingle()
+      if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
+      if ((post as { university_id: string }).university_id !== viewer.university_id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } else {
+      const { data: row } = await (supabase as any)
+        .from('comments')
+        .select('posts!inner(university_id)')
+        .eq('id', id)
+        .maybeSingle()
+      const uni = row?.posts?.university_id
+      if (!uni) return NextResponse.json({ error: 'Comment not found' }, { status: 404 })
+      if (uni !== viewer.university_id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
+  }
 
   if (type === 'post') {
     const { data: existing } = await supabase.from('post_votes').select('*').eq('post_id', id).eq('user_id', viewer.id).maybeSingle()
@@ -40,6 +64,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // GET is read-only count + did-I-vote. Auth optional (count is public,
+  // vote status is per-viewer). No suspension check needed for a read.
   const { viewer, supabase } = await getActionClient()
 
   const url    = new URL(req.url)

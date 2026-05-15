@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient } from '@/lib/server-auth'
+import { requireViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 
 type Message = {
@@ -9,8 +9,9 @@ type Message = {
 }
 
 export async function GET() {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const { data } = await (supabase as any)
     .from('messages')
@@ -45,14 +46,35 @@ const SendSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (viewer.is_banned) return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const parsed = SendSchema.safeParse(await req.json())
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input.' }, { status: 400 })
   if (parsed.data.recipient_id === viewer.id) {
     return NextResponse.json({ error: 'Cannot message yourself.' }, { status: 400 })
+  }
+
+  // Cross-school check: a user can only DM others in the same school.
+  // Without this, anyone who knows a recipient's user-id could message
+  // them across schools. Global admins are exempt.
+  if (viewer.role !== 'admin') {
+    const { data: recipient } = await supabase
+      .from('users')
+      .select('university_id, is_banned')
+      .eq('id', parsed.data.recipient_id)
+      .maybeSingle()
+    if (!recipient) {
+      return NextResponse.json({ error: 'Recipient not found.' }, { status: 404 })
+    }
+    const r = recipient as { university_id: string; is_banned: boolean }
+    if (r.university_id !== viewer.university_id) {
+      return NextResponse.json({ error: 'Cannot message users from a different school.' }, { status: 403 })
+    }
+    if (r.is_banned) {
+      return NextResponse.json({ error: 'Recipient is suspended.' }, { status: 403 })
+    }
   }
 
   const { error } = await (supabase as any)

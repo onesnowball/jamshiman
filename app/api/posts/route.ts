@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient } from '@/lib/server-auth'
+import { getActionClient, requireViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, getHandleMap, getAuthorLabel } from '@/lib/admin-users'
 import { domainToSlug } from '@/lib/school-slugs'
 import { awardXp } from '@/lib/xp/awardXp'
@@ -103,14 +103,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) {
-    return NextResponse.json({ error: 'You need to sign in to post.' }, { status: 401 })
-  }
-
-  if (viewer.is_banned) {
-    return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
-  }
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const isGlobalAdmin = viewer.role === 'admin'
 

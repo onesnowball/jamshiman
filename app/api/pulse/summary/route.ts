@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getActionClient } from '@/lib/server-auth'
+import { requireViewer } from '@/lib/server-auth'
 import { getUniversityBySlug } from '@/lib/school'
 import { getDetroitTodayDateString } from '@/lib/pulse/date'
 import { canShowAggregate } from '@/lib/pulse/privacy'
-import { isOnboarded } from '@/lib/onboarding'
 import { ACADEMIC_STATUS_LABELS } from '@/lib/pulse/options'
 
 export const dynamic = 'force-dynamic'
@@ -23,9 +22,9 @@ type Agg = {
 }
 
 export async function GET(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isOnboarded(viewer as any)) return NextResponse.json({ error: 'Onboarding required' }, { status: 403 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const schoolSlug = req.nextUrl.searchParams.get('school')
   if (!schoolSlug) return NextResponse.json({ error: 'Missing school' }, { status: 400 })

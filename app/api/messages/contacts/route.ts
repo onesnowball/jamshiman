@@ -6,12 +6,13 @@
  * Each entry has { id, handle } where handle is the email-prefix.
  */
 import { NextResponse } from 'next/server'
-import { getActionClient } from '@/lib/server-auth'
+import { requireViewer } from '@/lib/server-auth'
 import { getAuthEmailMap, toPublicHandle } from '@/lib/admin-users'
 
 export async function GET() {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   // Find non-anonymous post authors from this university (excluding viewer)
   const { data: postsData } = await (supabase as any)

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient } from '@/lib/server-auth'
+import { requireViewer } from '@/lib/server-auth'
 import { getDetroitTodayDateString } from '@/lib/pulse/date'
-import { isOnboarded } from '@/lib/onboarding'
 import { MOODS, CONTEXT_TAGS } from '@/lib/pulse/options'
 import { refreshPulseAggregatesForDate } from '@/lib/pulse/aggregates'
 import { awardXp } from '@/lib/xp/awardXp'
@@ -18,11 +17,12 @@ const Body = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (viewer.is_banned) return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
-  if (!isOnboarded(viewer as any) || !viewer.dept_id || !viewer.academic_status) {
-    return NextResponse.json({ error: 'Onboarding required' }, { status: 403 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
+  // requireViewer guarantees onboarded; double-check dept_id/academic_status for Pulse-specific fields.
+  if (!viewer.dept_id || !viewer.academic_status) {
+    return NextResponse.json({ error: 'Onboarding incomplete' }, { status: 403 })
   }
 
   const body = await req.json()

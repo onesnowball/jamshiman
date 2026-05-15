@@ -1,5 +1,7 @@
 import type { User } from '@/types/database'
+import { NextResponse } from 'next/server'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
+import { isOnboarded } from '@/lib/onboarding'
 import {
   getDevBypassEmail,
   getDevBypassEmailHash,
@@ -64,10 +66,51 @@ export async function getActionClient() {
   // Mutations continue to use the service-role admin client because the
   // codebase does not rely on RLS for writes — every API route explicitly
   // checks auth (above), school scope, suspension, and ownership.
+  //
+  // SECURITY: `supabase` returned here is the SERVICE-ROLE admin client.
+  // Any read OR write performed against it bypasses RLS. New routes
+  // should prefer `requireViewer()` below, which bundles the standard
+  // auth + suspension + onboarding guards before exposing the client.
   return {
     viewer,
     supabase: createAdminClient(),
   }
+}
+
+/**
+ * Canonical mutation/read guard. Returns either the authenticated viewer
+ * + admin Supabase client, or a ready-to-return error response.
+ *
+ * Usage:
+ *
+ *     const auth = await requireViewer()
+ *     if (auth.error) return auth.error
+ *     const { viewer, supabase } = auth
+ *
+ * Bundles three checks every authenticated user-facing route needs:
+ *   - authenticated (401 otherwise)
+ *   - not banned (403 otherwise)
+ *   - onboarding complete (403 otherwise)
+ *
+ * Routes that must accept un-onboarded viewers (e.g. /api/profile/onboarding
+ * itself, or /api/auth/setup) should NOT use this — they fall back to
+ * `getActionClient()` + manual checks.
+ */
+export async function requireViewer(): Promise<
+  | { viewer: AppViewer; supabase: ReturnType<typeof createAdminClient>; error: null }
+  | { viewer: null; supabase: null; error: NextResponse }
+> {
+  const { viewer, supabase } = await getActionClient()
+  if (!viewer) {
+    return { viewer: null, supabase: null, error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  }
+  if (viewer.is_banned) {
+    return { viewer: null, supabase: null, error: NextResponse.json({ error: 'Account suspended' }, { status: 403 }) }
+  }
+  if (!isOnboarded(viewer as any)) {
+    return { viewer: null, supabase: null, error: NextResponse.json({ error: 'Onboarding required' }, { status: 403 }) }
+  }
+  return { viewer, supabase, error: null }
 }
 
 export async function getAdminViewer() {

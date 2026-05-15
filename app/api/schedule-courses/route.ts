@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient } from '@/lib/server-auth'
+import { requireViewer } from '@/lib/server-auth'
 
 const BaseScheduleCourseSchema = z.object({
   schedule_id: z.string().uuid(),
@@ -26,15 +26,28 @@ async function scheduleBelongsToViewer(supabase: any, scheduleId: string, viewer
     .eq('id', scheduleId)
     .eq('user_id', viewerId)
     .single()
-
   return !!data
 }
 
+/**
+ * Verify the requested course belongs to the viewer's school.
+ * Global admins bypass (so they can build demo schedules across schools).
+ */
+async function courseInViewerSchool(supabase: any, courseId: string, viewerUniversityId: string, viewerRole: string): Promise<boolean> {
+  if (viewerRole === 'admin') return true
+  const { data: course } = await supabase
+    .from('courses')
+    .select('university_id')
+    .eq('id', courseId)
+    .maybeSingle()
+  if (!course) return false
+  return (course as { university_id: string }).university_id === viewerUniversityId
+}
+
 export async function POST(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const body = await req.json()
   const parsed = BaseScheduleCourseSchema.safeParse(body)
@@ -45,6 +58,9 @@ export async function POST(req: NextRequest) {
   const supabaseAny = supabase as any
   if (!(await scheduleBelongsToViewer(supabaseAny, parsed.data.schedule_id, viewer.id))) {
     return NextResponse.json({ error: 'Schedule not found.' }, { status: 404 })
+  }
+  if (!(await courseInViewerSchool(supabaseAny, parsed.data.course_id, viewer.university_id, viewer.role))) {
+    return NextResponse.json({ error: 'Course not in your school.' }, { status: 403 })
   }
 
   const { data, error } = await supabaseAny
@@ -61,10 +77,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const body = await req.json()
   const parsed = UpdateScheduleCourseSchema.safeParse(body)
@@ -75,6 +90,9 @@ export async function PATCH(req: NextRequest) {
   const supabaseAny = supabase as any
   if (!(await scheduleBelongsToViewer(supabaseAny, parsed.data.schedule_id, viewer.id))) {
     return NextResponse.json({ error: 'Schedule not found.' }, { status: 404 })
+  }
+  if (!(await courseInViewerSchool(supabaseAny, parsed.data.course_id, viewer.university_id, viewer.role))) {
+    return NextResponse.json({ error: 'Course not in your school.' }, { status: 403 })
   }
 
   const { error } = await supabaseAny
@@ -97,10 +115,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const body = await req.json()
   const parsed = DeleteScheduleCourseSchema.safeParse(body)

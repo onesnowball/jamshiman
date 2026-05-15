@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
-import { getActionClient } from '@/lib/server-auth'
+import { requireViewer } from '@/lib/server-auth'
 import { getDetroitTodayDateString } from '@/lib/pulse/date'
 import { refreshPulseAggregatesForDate } from '@/lib/pulse/aggregates'
 
 export async function DELETE() {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const today = getDetroitTodayDateString()
   const { error } = await (supabase as any)

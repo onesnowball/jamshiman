@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getActionClient } from '@/lib/server-auth'
+import { requireViewer } from '@/lib/server-auth'
 import { awardXp } from '@/lib/xp/awardXp'
 import type { Database } from '@/types/database'
 
@@ -19,10 +19,9 @@ const ReviewSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const { viewer, supabase } = await getActionClient()
-  if (!viewer) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const auth = await requireViewer()
+  if (auth.error) return auth.error
+  const { viewer, supabase } = auth
 
   const body = await req.json()
   const parsed = ReviewSchema.safeParse(body)
@@ -33,11 +32,6 @@ export async function POST(req: NextRequest) {
   const reviewPayload = {
     ...parsed.data,
     anonymized_text: parsed.data.anonymized_text ?? parsed.data.original_text,
-  }
-
-  // Check user isn't banned
-  if (viewer.is_banned) {
-    return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
   }
 
   // H-5: Verify the advisor belongs to the same university as the reviewer.
